@@ -1,5 +1,5 @@
 <script setup>
-import { BuildingStorefrontIcon, Squares2X2Icon } from '@heroicons/vue/24/outline'
+import { BuildingStorefrontIcon, Squares2X2Icon, UsersIcon } from '@heroicons/vue/24/outline'
 import { computed, onMounted, onUnmounted, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import AppTooltip from '@/components/common/AppTooltip.vue'
@@ -11,6 +11,7 @@ const ui = useUiStore()
 const menuItems = [
   { name: 'dashboard', label: 'Dashboard', icon: Squares2X2Icon },
   { name: 'branches', label: 'Branches', icon: BuildingStorefrontIcon },
+  { name: 'staff', label: 'Staff', icon: UsersIcon },
 ]
 
 const sidebarClasses = computed(() => {

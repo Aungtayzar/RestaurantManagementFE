@@ -30,6 +30,11 @@ const router = createRouter({
           name: 'branches',
           component: () => import('@/views/branches/BranchesView.vue'),
         },
+        {
+          path: 'staff',
+          name: 'staff',
+          component: () => import('@/views/staff/StaffListView.vue'),
+        },
       ],
     },
   ],
