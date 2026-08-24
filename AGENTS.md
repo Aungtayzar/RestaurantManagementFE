@@ -3,6 +3,16 @@
 Vue 3 + Vite SPA for a Restaurant Management System MVP (POS, KDS, payments, reports).
 Frontend only — talks to a separate backend over HTTP. All API code lives in `src/api/`.
 
+## Authorization
+
+Frontend role/permission checks control navigation and UX only.
+
+The Laravel API is the security authority.
+
+Never assume that hiding a button, route, or page prevents unauthorized API access.
+
+Always handle HTTP 401/403 responses gracefully.
+
 ## Product context (what we're building)
 
 - 4 roles: **Admin, Manager, Cashier, Kitchen**; every user belongs to one branch.
@@ -56,16 +66,31 @@ Current state: fresh scaffold on branch `feature/authentication` — router rout
 
 Runtime:
 
-| Package | Purpose |
-| --- | --- |
-| `vue` | UI framework |
-| `vue-router` | routing |
-| `pinia` | state management |
-| `axios` | HTTP client |
-| `tailwindcss` + `@tailwindcss/vite` | styling (v4) |
-| `@headlessui/vue` | accessible unstyled components (modals, menus) |
-| `@heroicons/vue` | icon set |
-| `vue3-toastify` | toast notifications |
-| `chart.js` + `vue-chartjs` | dashboard charts |
+| Package                             | Purpose                                        |
+| ----------------------------------- | ---------------------------------------------- |
+| `vue`                               | UI framework                                   |
+| `vue-router`                        | routing                                        |
+| `pinia`                             | state management                               |
+| `axios`                             | HTTP client                                    |
+| `tailwindcss` + `@tailwindcss/vite` | styling (v4)                                   |
+| `@headlessui/vue`                   | accessible unstyled components (modals, menus) |
+| `@heroicons/vue`                    | icon set                                       |
+| `vue3-toastify`                     | toast notifications                            |
+| `chart.js` + `vue-chartjs`          | dashboard charts                               |
 
 Dev tooling: `vite`, `@vitejs/plugin-vue`, `vite-plugin-vue-devtools`, `vitest` + `@vue/test-utils` + `jsdom`, `oxlint`, `eslint` (+ `eslint-plugin-vue`, `@vitest/eslint-plugin`, `globals`, `@eslint/js`), `prettier` (+ `prettier-plugin-tailwindcss`, `eslint-config-prettier`), `npm-run-all2` (powers `run-s` in lint script).
+
+## AI working rules
+
+- Inspect existing code before making changes.
+- For non-trivial features, explain the implementation plan before coding.
+- Keep changes scoped to the requested feature.
+- Reuse existing components, stores, composables, and API services before creating new ones.
+- Never call the backend directly from components or stores; use `src/api/`.
+- Never put business logic that belongs to the backend into the frontend.
+- All role/permission checks must also be enforced by the backend; frontend guards are for UX, not security.
+- Do not add dependencies unless there is a clear reason.
+- Add/update tests for new behavior.
+- Run `npm run lint`, relevant tests, and `npm run build` before considering a feature complete.
+- Do not modify generated files or dependency lockfiles unless required.
+- At the end, summarize changed files, tests run, and any remaining concerns.
