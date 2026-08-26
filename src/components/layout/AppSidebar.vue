@@ -3,16 +3,24 @@ import { BuildingStorefrontIcon, Squares2X2Icon, UsersIcon } from '@heroicons/vu
 import { computed, onMounted, onUnmounted, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import AppTooltip from '@/components/common/AppTooltip.vue'
+import { useAuthStore } from '@/stores/auth'
 import { useUiStore } from '@/stores/ui'
 
 const route = useRoute()
+const auth = useAuthStore()
 const ui = useUiStore()
 
 const menuItems = [
   { name: 'dashboard', label: 'Dashboard', icon: Squares2X2Icon },
-  { name: 'branches', label: 'Branches', icon: BuildingStorefrontIcon },
-  { name: 'staff', label: 'Staff', icon: UsersIcon },
+  { name: 'branches', label: 'Branches', icon: BuildingStorefrontIcon, roles: ['admin'] },
+  { name: 'staff', label: 'Staff', icon: UsersIcon, roles: ['admin', 'manager'] },
 ]
+
+const visibleMenuItems = computed(() =>
+  menuItems.filter(
+    (item) => !item.roles || item.roles.some((role) => auth.user?.roles?.includes(role)),
+  ),
+)
 
 const sidebarClasses = computed(() => {
   if (ui.isMobileViewport) {
@@ -21,10 +29,7 @@ const sidebarClasses = computed(() => {
       ui.isMobileOpen ? 'translate-x-0' : '-translate-x-full',
     ]
   }
-  return [
-    ui.isCollapsed ? 'w-[72px]' : 'w-64',
-    'transition-all duration-200',
-  ]
+  return [ui.isCollapsed ? 'w-[72px]' : 'w-64', 'transition-all duration-200']
 })
 
 const desktopQuery = window.matchMedia('(min-width: 768px)')
@@ -70,7 +75,7 @@ watch(
 
     <nav class="flex-1 space-y-1 px-3 py-4">
       <RouterLink
-        v-for="item in menuItems"
+        v-for="item in visibleMenuItems"
         :key="item.name"
         :to="{ name: item.name }"
         class="group relative flex items-center gap-3 rounded-lg text-sm font-medium transition-colors"

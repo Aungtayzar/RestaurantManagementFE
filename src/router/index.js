@@ -29,11 +29,13 @@ const router = createRouter({
           path: 'branches',
           name: 'branches',
           component: () => import('@/views/branches/BranchesView.vue'),
+          meta: { roles: ['admin'] },
         },
         {
           path: 'staff',
           name: 'staff',
           component: () => import('@/views/staff/StaffListView.vue'),
+          meta: { roles: ['admin', 'manager'] },
         },
       ],
     },
@@ -48,6 +50,10 @@ router.beforeEach((to) => {
   }
 
   if (to.meta.requiresGuest && auth.token) {
+    return { name: 'dashboard' }
+  }
+
+  if (to.meta.roles?.length && !auth.user?.roles?.some((role) => to.meta.roles.includes(role))) {
     return { name: 'dashboard' }
   }
 })

@@ -110,7 +110,7 @@ function handleRetry() {
                 </div>
                 <button
                   type="button"
-                  class="text-secondary-400 hover:text-secondary-600 transition"
+                  class="text-secondary-400 hover:text-secondary-600 cursor-pointer transition"
                   aria-label="Close"
                   @click="emit('close')"
                 >

@@ -135,7 +135,7 @@ async function handleSubmit() {
                 </DialogTitle>
                 <button
                   type="button"
-                  class="text-secondary-400 hover:text-secondary-600 transition"
+                  class="text-secondary-400 hover:text-secondary-600 cursor-pointer transition"
                   aria-label="Close"
                   :disabled="isSaving"
                   @click="handleClose"

@@ -2,14 +2,17 @@
 import { computed, onUnmounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { MagnifyingGlassIcon, PencilSquareIcon } from '@heroicons/vue/24/outline'
-import { ChevronLeftIcon, ChevronRightIcon } from '@heroicons/vue/20/solid'
-import { toast } from 'vue3-toastify'
+import { ChevronLeftIcon, ChevronRightIcon, PlusIcon } from '@heroicons/vue/20/solid'
 import { getStaff } from '@/api/staff'
 import { getBranches } from '@/api/branches'
+import { useAuthStore } from '@/stores/auth'
 import BaseSkeleton from '@/components/common/BaseSkeleton.vue'
+import StaffFormModal from '@/components/common/StaffFormModal.vue'
+import StaffDetailModal from '@/components/common/StaffDetailModal.vue'
 
 const route = useRoute()
 const router = useRouter()
+const auth = useAuthStore()
 
 const ROLE_OPTIONS = [
   { value: 'admin', label: 'Admin' },
@@ -30,6 +33,11 @@ const meta = ref(null)
 const branches = ref([])
 const isLoading = ref(false)
 const error = ref(null)
+const isCreateOpen = ref(false)
+const editingStaff = ref(null)
+const detailStaffId = ref(null)
+
+const isAdmin = computed(() => auth.user?.roles?.includes('admin') ?? false)
 
 const search = ref('')
 const debouncedSearch = ref('')
@@ -98,8 +106,20 @@ function resetToFirstPage() {
   fetchStaff()
 }
 
-function showPlaceholder(action) {
-  toast.info(`${action} is not available yet.`)
+function closeFormModal() {
+  isCreateOpen.value = false
+  editingStaff.value = null
+}
+
+function handleSaved() {
+  const wasCreate = isCreateOpen.value
+  closeFormModal()
+
+  if (wasCreate) {
+    resetToFirstPage()
+    return
+  }
+  fetchStaff()
 }
 
 watch(search, (value) => {
@@ -126,9 +146,20 @@ onUnmounted(() => clearTimeout(searchTimeout))
 
 <template>
   <div>
-    <div class="mb-6">
-      <h1 class="text-secondary-900 text-2xl font-bold">Staff</h1>
-      <p class="text-secondary-500 mt-1 text-sm">Manage your restaurant staff accounts</p>
+    <div class="mb-6 flex flex-wrap items-center justify-between gap-4">
+      <div>
+        <h1 class="text-secondary-900 text-2xl font-bold">Staff</h1>
+        <p class="text-secondary-500 mt-1 text-sm">Manage your restaurant staff accounts</p>
+      </div>
+      <button
+        v-if="isAdmin"
+        type="button"
+        class="bg-primary-600 hover:bg-primary-700 focus:ring-primary-200 inline-flex items-center gap-2 rounded-lg px-4 py-2.5 text-sm font-semibold text-white transition-colors focus:ring-2 focus:outline-none"
+        @click="isCreateOpen = true"
+      >
+        <PlusIcon class="h-4 w-4" />
+        Add New
+      </button>
     </div>
 
     <div
@@ -162,7 +193,7 @@ onUnmounted(() => clearTimeout(searchTimeout))
         </select>
       </div>
 
-      <div class="w-full sm:w-auto">
+      <div v-if="isAdmin" class="w-full sm:w-auto">
         <label for="staff-branch-filter" class="sr-only">Filter by branch</label>
         <select
           id="staff-branch-filter"
@@ -177,11 +208,7 @@ onUnmounted(() => clearTimeout(searchTimeout))
       </div>
     </div>
 
-    <div
-      v-if="isLoading"
-      role="status"
-      aria-label="Loading staff"
-    >
+    <div v-if="isLoading" role="status" aria-label="Loading staff">
       <div class="grid grid-cols-1 gap-4 md:hidden">
         <div
           v-for="n in 6"
@@ -207,7 +234,9 @@ onUnmounted(() => clearTimeout(searchTimeout))
           </div>
         </div>
       </div>
-      <div class="border-secondary-200 hidden overflow-hidden rounded-xl border bg-white shadow-sm md:block">
+      <div
+        class="border-secondary-200 hidden overflow-hidden rounded-xl border bg-white shadow-sm md:block"
+      >
         <div class="divide-secondary-200 divide-y">
           <div v-for="n in 6" :key="n" class="flex items-center gap-4 px-6 py-4">
             <BaseSkeleton class="h-9 w-9 shrink-0 rounded-full" />
@@ -284,14 +313,15 @@ onUnmounted(() => clearTimeout(searchTimeout))
             <button
               type="button"
               class="border-secondary-300 text-secondary-700 hover:bg-secondary-50 focus:ring-primary-200 inline-flex flex-1 items-center justify-center rounded-lg border bg-white px-3 py-2 text-xs font-semibold transition focus:ring-2 focus:outline-none"
-              @click="showPlaceholder('Details')"
+              @click="detailStaffId = member.id"
             >
               Details
             </button>
             <button
+              v-if="isAdmin"
               type="button"
               class="border-secondary-300 text-secondary-700 hover:bg-secondary-50 focus:ring-primary-200 inline-flex flex-1 items-center justify-center gap-1 rounded-lg border bg-white px-3 py-2 text-xs font-semibold transition focus:ring-2 focus:outline-none"
-              @click="showPlaceholder('Edit')"
+              @click="editingStaff = member"
             >
               <PencilSquareIcon class="h-3.5 w-3.5" />
               Edit
@@ -300,9 +330,11 @@ onUnmounted(() => clearTimeout(searchTimeout))
         </article>
       </div>
 
-      <div class="border-secondary-200 hidden overflow-hidden rounded-xl border bg-white shadow-sm md:block">
+      <div
+        class="border-secondary-200 hidden overflow-hidden rounded-xl border bg-white shadow-sm md:block"
+      >
         <div class="overflow-x-auto">
-          <table class="min-w-full divide-y divide-secondary-200">
+          <table class="divide-secondary-200 min-w-full divide-y">
             <thead class="bg-secondary-50">
               <tr>
                 <th
@@ -392,14 +424,15 @@ onUnmounted(() => clearTimeout(searchTimeout))
                     <button
                       type="button"
                       class="border-secondary-300 text-secondary-700 hover:bg-secondary-50 focus:ring-primary-200 inline-flex items-center rounded-lg border bg-white px-3 py-1.5 text-xs font-semibold transition focus:ring-2 focus:outline-none"
-                      @click="showPlaceholder('Details')"
+                      @click="detailStaffId = member.id"
                     >
                       Details
                     </button>
                     <button
+                      v-if="isAdmin"
                       type="button"
                       class="border-secondary-300 text-secondary-700 hover:bg-secondary-50 focus:ring-primary-200 inline-flex items-center gap-1 rounded-lg border bg-white px-3 py-1.5 text-xs font-semibold transition focus:ring-2 focus:outline-none"
-                      @click="showPlaceholder('Edit')"
+                      @click="editingStaff = member"
                     >
                       <PencilSquareIcon class="h-3.5 w-3.5" />
                       Edit
@@ -443,5 +476,20 @@ onUnmounted(() => clearTimeout(searchTimeout))
       </div>
       <p v-else-if="meta" class="text-secondary-500 mt-4 text-sm">{{ rangeText }}</p>
     </template>
+
+    <StaffFormModal
+      :open="!!editingStaff || isCreateOpen"
+      :branches="branches"
+      :staff="editingStaff"
+      :self-id="auth.user?.id ?? null"
+      @close="closeFormModal"
+      @saved="handleSaved"
+    />
+
+    <StaffDetailModal
+      :open="!!detailStaffId"
+      :staff-id="detailStaffId"
+      @close="detailStaffId = null"
+    />
   </div>
 </template>
