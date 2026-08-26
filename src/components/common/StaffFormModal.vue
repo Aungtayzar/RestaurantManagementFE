@@ -28,7 +28,6 @@ const isSelfEdit = computed(
 )
 
 const ROLE_OPTIONS = [
-  { value: 'admin', label: 'Admin' },
   { value: 'manager', label: 'Manager' },
   { value: 'cashier', label: 'Cashier' },
   { value: 'kitchen', label: 'Kitchen' },
