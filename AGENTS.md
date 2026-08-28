@@ -94,3 +94,17 @@ Dev tooling: `vite`, `@vitejs/plugin-vue`, `vite-plugin-vue-devtools`, `vitest` 
 - Run `npm run lint`, relevant tests, and `npm run build` before considering a feature complete.
 - Do not modify generated files or dependency lockfiles unless required.
 - At the end, summarize changed files, tests run, and any remaining concerns.
+
+## Agent skills
+
+### Issue tracker
+
+GitHub Issues (uses `gh` CLI). See `docs/agents/issue-tracker.md`.
+
+### Triage labels
+
+Default labels: `needs-triage`, `needs-info`, `ready-for-agent`, `ready-for-human`, `wontfix`. See `docs/agents/triage-labels.md`.
+
+### Domain docs
+
+Single-context layout (one `CONTEXT.md` + `docs/adr/` at repo root). See `docs/agents/domain.md`.
