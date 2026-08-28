@@ -76,6 +76,14 @@ async function handleSubmit() {
               class="border-secondary-300 text-secondary-900 placeholder:text-secondary-400 focus:border-primary-500 focus:ring-primary-100 disabled:bg-secondary-50 block w-full rounded-lg border px-3.5 py-2.5 text-sm focus:ring-2 focus:outline-none"
               :disabled="loading"
             />
+            <div class="mt-2 text-right">
+              <router-link
+                :to="{ name: 'forgot-password' }"
+                class="text-primary-600 hover:text-primary-500 text-sm font-medium"
+              >
+                Forgot password?
+              </router-link>
+            </div>
           </div>
 
           <button
