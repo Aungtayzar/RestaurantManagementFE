@@ -12,6 +12,12 @@ Single-context glossary for the Restaurant Management System frontend.
   (never in the URL, `localStorage`, or `sessionStorage`) and discarded on unmount.
 - **OTP** — a time-limited, single-use one-time passcode emailed to the user during the
   forgot-password flow. Six digits, entered via the segmented `OtpInput` component.
+- **guest route** — a route carrying `meta.requiresGuest: true` (the entry `/` and
+  `/login` and `/forgot-password` pages). Authenticated users are bounced to the
+  dashboard by the router guard; only unauthenticated visitors may view them.
+- **login entry link** — the public entry point (`/` → `EntryView`). It renders a
+  prominent "Sign in" link to the `/login` route (plus a "Forgot password?" link) so
+  unauthenticated users have a navigable way into the app. It is itself a guest route.
 
 ## Password reset flow
 

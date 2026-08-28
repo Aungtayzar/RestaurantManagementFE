@@ -6,6 +6,7 @@ import { useAuthStore } from '@/stores/auth'
 
 // Warm the lazy-loaded route components so guard tests do not hit vitest's default timeout.
 await Promise.all([
+  import('@/views/auth/EntryView.vue'),
   import('@/views/staff/StaffListView.vue'),
   import('@/views/branches/BranchesView.vue'),
 ])
@@ -62,6 +63,47 @@ describe('router role guards', () => {
     authenticate({ roles: ['manager'] })
 
     await router.push('/dashboard/branches')
+
+    expect(router.currentRoute.value.name).toBe('dashboard')
+  })
+})
+
+describe('router guest guard', () => {
+  beforeEach(() => {
+    setActivePinia(createPinia())
+    const auth = useAuthStore()
+    auth.token = null
+    auth.user = null
+  })
+
+  it('lets guests reach the public entry page', async () => {
+    await router.push('/')
+
+    expect(router.currentRoute.value.name).toBe('entry')
+    expect(router.currentRoute.value.meta.requiresGuest).toBe(true)
+  })
+
+  it('redirects authenticated users away from the entry page to the dashboard', async () => {
+    authenticate({ roles: ['admin'] })
+    await router.push('/dashboard')
+
+    await router.push('/')
+
+    expect(router.currentRoute.value.name).toBe('dashboard')
+  })
+
+  it('redirects authenticated users away from the login page to the dashboard', async () => {
+    authenticate({ roles: ['admin'] })
+
+    await router.push('/login')
+
+    expect(router.currentRoute.value.name).toBe('dashboard')
+  })
+
+  it('redirects authenticated users away from the forgot-password page to the dashboard', async () => {
+    authenticate({ roles: ['admin'] })
+
+    await router.push('/forgot-password')
 
     expect(router.currentRoute.value.name).toBe('dashboard')
   })

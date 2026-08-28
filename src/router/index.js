@@ -7,7 +7,9 @@ const router = createRouter({
   routes: [
     {
       path: '/',
-      redirect: { name: 'dashboard' },
+      name: 'entry',
+      component: () => import('@/views/auth/EntryView.vue'),
+      meta: { requiresGuest: true },
     },
     {
       path: '/login',
