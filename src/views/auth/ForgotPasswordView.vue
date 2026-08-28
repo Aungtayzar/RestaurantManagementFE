@@ -24,6 +24,7 @@ const passwordsMatch = computed(() => password.value === passwordConfirmation.va
 const passwordValid = computed(() => password.value.length >= 8)
 
 function startCooldown() {
+  if (cooldownInterval) clearInterval(cooldownInterval)
   cooldown.value = RESEND_COOLDOWN
   cooldownInterval = setInterval(() => {
     cooldown.value--

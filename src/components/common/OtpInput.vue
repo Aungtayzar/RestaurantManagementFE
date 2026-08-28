@@ -4,6 +4,7 @@ import { ref, onMounted, watch } from 'vue'
 const props = defineProps({
   modelValue: { type: String, default: '' },
   length: { type: Number, default: 6 },
+  disabled: { type: Boolean, default: false },
 })
 
 const emit = defineEmits(['update:modelValue'])
@@ -83,7 +84,8 @@ function emitValue() {
       maxlength="1"
       :value="digits[index]"
       :aria-label="`Digit ${index + 1} of ${length}`"
-      class="border-secondary-300 text-secondary-900 focus:border-primary-500 focus:ring-primary-100 h-12 w-12 rounded-lg border text-center text-lg font-semibold focus:ring-2 focus:outline-none"
+      :disabled="disabled"
+      class="border-secondary-300 text-secondary-900 focus:border-primary-500 focus:ring-primary-100 h-12 w-12 rounded-lg border text-center text-lg font-semibold focus:ring-2 focus:outline-none disabled:bg-secondary-50 disabled:text-secondary-400 disabled:cursor-not-allowed"
       @input="handleInput(index, $event)"
       @keydown="handleKeydown(index, $event)"
       @paste="handlePaste"

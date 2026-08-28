@@ -75,4 +75,18 @@ describe('OtpInput', () => {
 
     expect(onUpdate).not.toHaveBeenCalled()
   })
+
+  it('disables inputs when disabled prop is true', async () => {
+    const wrapper = createWrapper({ disabled: true })
+    const inputs = wrapper.findAll('input')
+
+    inputs.forEach((input) => {
+      expect(input.attributes('disabled')).toBeDefined()
+    })
+
+    await inputs[0].setValue('1')
+    await wrapper.vm.$nextTick()
+
+    expect(inputs[0].element.value).toBe('')
+  })
 })
