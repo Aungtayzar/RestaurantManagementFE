@@ -30,7 +30,7 @@ Examples:
 - Modal
 - DataTable
 - OrderCard
-- MenuItemCard
+- MenuItemRow
 - StatusBadge
 
 ### Stores

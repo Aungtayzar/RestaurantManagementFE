@@ -3,6 +3,10 @@
 Vue 3 + Vite SPA for a Restaurant Management System MVP (POS, KDS, payments, reports).
 Frontend only — talks to a separate backend over HTTP. All API code lives in `src/api/`.
 
+## API Base Route
+
+I am using Laragon so the base route is <http://restaurnat-management-system.test/>
+
 ## Authorization
 
 Frontend role/permission checks control navigation and UX only.

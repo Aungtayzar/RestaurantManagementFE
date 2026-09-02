@@ -9,6 +9,7 @@ await Promise.all([
   import('@/views/auth/EntryView.vue'),
   import('@/views/staff/StaffListView.vue'),
   import('@/views/branches/BranchesView.vue'),
+  import('@/views/menu/MenuItemsView.vue'),
 ])
 
 function authenticate({ roles }) {
@@ -18,11 +19,12 @@ function authenticate({ roles }) {
 }
 
 describe('router role guards', () => {
-  beforeEach(() => {
+  beforeEach(async () => {
     setActivePinia(createPinia())
     const auth = useAuthStore()
     auth.token = null
     auth.user = null
+    await router.push('/')
   })
 
   it.each([
@@ -66,14 +68,53 @@ describe('router role guards', () => {
 
     expect(router.currentRoute.value.name).toBe('dashboard')
   })
+
+  it('redirects guests away from the menu-items page to the login page', async () => {
+    await router.push('/dashboard/menu-items')
+
+    expect(router.currentRoute.value.name).toBe('login')
+  })
+
+  it('lets admins access the menu-items page', async () => {
+    authenticate({ roles: ['admin'] })
+
+    await router.push('/dashboard/menu-items')
+
+    expect(router.currentRoute.value.name).toBe('menu-items')
+  })
+
+  it('lets managers access the menu-items page', async () => {
+    authenticate({ roles: ['manager'] })
+
+    await router.push('/dashboard/menu-items')
+
+    expect(router.currentRoute.value.name).toBe('menu-items')
+  })
+
+  it('redirects cashiers away from the menu-items page', async () => {
+    authenticate({ roles: ['cashier'] })
+
+    await router.push('/dashboard/menu-items')
+
+    expect(router.currentRoute.value.name).toBe('dashboard')
+  })
+
+  it('redirects kitchen users away from the menu-items page', async () => {
+    authenticate({ roles: ['kitchen'] })
+
+    await router.push('/dashboard/menu-items')
+
+    expect(router.currentRoute.value.name).toBe('dashboard')
+  })
 })
 
 describe('router guest guard', () => {
-  beforeEach(() => {
+  beforeEach(async () => {
     setActivePinia(createPinia())
     const auth = useAuthStore()
     auth.token = null
     auth.user = null
+    await router.push('/')
   })
 
   it('lets guests reach the public entry page', async () => {

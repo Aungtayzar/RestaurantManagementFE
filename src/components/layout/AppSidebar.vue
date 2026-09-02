@@ -1,8 +1,13 @@
 <script setup>
-import { BuildingStorefrontIcon, Squares2X2Icon, UsersIcon } from '@heroicons/vue/24/outline'
+import {
+  BuildingStorefrontIcon,
+  Squares2X2Icon,
+  UsersIcon,
+} from '@heroicons/vue/24/outline'
 import { computed, onMounted, onUnmounted, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import AppTooltip from '@/components/common/AppTooltip.vue'
+import MenuItemsIcon from '@/components/common/MenuItemsIcon.vue'
 import { useAuthStore } from '@/stores/auth'
 import { useUiStore } from '@/stores/ui'
 
@@ -12,6 +17,7 @@ const ui = useUiStore()
 
 const menuItems = [
   { name: 'dashboard', label: 'Dashboard', icon: Squares2X2Icon },
+  { name: 'menu-items', label: 'Menu Items', icon: MenuItemsIcon, roles: ['admin', 'manager'] },
   { name: 'branches', label: 'Branches', icon: BuildingStorefrontIcon, roles: ['admin'] },
   { name: 'staff', label: 'Staff', icon: UsersIcon, roles: ['admin', 'manager'] },
 ]

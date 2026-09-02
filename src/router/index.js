@@ -45,6 +45,12 @@ const router = createRouter({
           component: () => import('@/views/staff/StaffListView.vue'),
           meta: { roles: ['admin', 'manager'] },
         },
+        {
+          path: 'menu-items',
+          name: 'menu-items',
+          component: () => import('@/views/menu/MenuItemsView.vue'),
+          meta: { roles: ['admin', 'manager'] },
+        },
       ],
     },
   ],

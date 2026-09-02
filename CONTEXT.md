@@ -18,6 +18,21 @@ Single-context glossary for the Restaurant Management System frontend.
 - **login entry link** — the public entry point (`/` → `EntryView`). It renders a
   prominent "Sign in" link to the `/login` route (plus a "Forgot password?" link) so
   unauthenticated users have a navigable way into the app. It is itself a guest route.
+- **Menu Item** — a dish or product available for ordering. Identified by id, with a
+  name, description, base_price, category (via category_id and category_name),
+  optional image, availability flag, and optional variants. Managed via the Menu
+  Management page (`/dashboard/menu-items`).
+- **Variant** — a named size or option of a menu item (e.g., "Regular", "Large") with
+  its own price. Items without variants use base_price as the sole price. The variants
+  array is replaced wholesale on each update (no partial diff).
+- **base_price** — the reference or starting price of a menu item. Displayed as
+  "From $X.XX" when variants exist, or as the actual price when no variants.
+- **Menu Management** — the admin CRUD page for menu items at
+  `/dashboard/menu-items`. Accessible to admin and manager roles. Uses a card grid
+  layout with search, category filter, and availability filter.
+- **Category** — a grouping for menu items (e.g., Appetizers, Desserts). Each category
+  has id, name, and display_order. Fetched via `GET /categories` for dropdowns and
+  filters. Category CRUD is planned as a future addition to the Menu Management page.
 
 ## Password reset flow
 
