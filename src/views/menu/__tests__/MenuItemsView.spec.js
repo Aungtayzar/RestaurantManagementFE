@@ -128,6 +128,29 @@ describe('MenuItemsView', () => {
     expect(wrapper.text()).toContain('Caesar Salad')
   })
 
+  it('collapses and expands each category independently', async () => {
+    const wrapper = await mountView()
+    const mainsToggle = wrapper.find('button[aria-label="Collapse Mains"]')
+    const mainsItems = wrapper.find('#category-items-1')
+    const startersItems = wrapper.find('#category-items-2')
+
+    expect(mainsToggle.attributes('aria-expanded')).toBe('true')
+    expect(mainsItems.isVisible()).toBe(true)
+    expect(startersItems.isVisible()).toBe(true)
+
+    await mainsToggle.trigger('click')
+
+    expect(wrapper.find('button[aria-label="Expand Mains"]').attributes('aria-expanded')).toBe(
+      'false',
+    )
+    expect(wrapper.find('#category-items-1').attributes('style')).toContain('display: none')
+    expect(startersItems.isVisible()).toBe(true)
+
+    await wrapper.find('button[aria-label="Expand Mains"]').trigger('click')
+
+    expect(wrapper.find('#category-items-1').isVisible()).toBe(true)
+  })
+
   it('shows loading skeletons while fetching', async () => {
     let resolveFetch
     getMenuItems.mockImplementation(

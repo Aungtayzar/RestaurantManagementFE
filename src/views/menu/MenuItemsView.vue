@@ -1,6 +1,6 @@
 <script setup>
 import { computed, onUnmounted, ref, watch } from 'vue'
-import { MagnifyingGlassIcon } from '@heroicons/vue/24/outline'
+import { ChevronDownIcon, MagnifyingGlassIcon } from '@heroicons/vue/24/outline'
 import { PlusIcon } from '@heroicons/vue/20/solid'
 import { ArrowPathIcon } from '@heroicons/vue/24/outline'
 import { getMenuItems, updateMenuItem } from '@/api/menuItems'
@@ -31,6 +31,7 @@ const isCreateOpen = ref(false)
 const editingItem = ref(null)
 const detailItemId = ref(null)
 const updatingItems = ref({})
+const collapsedCategories = ref(new Set())
 
 let searchTimeout
 
@@ -99,6 +100,18 @@ function handleDetailEdit(item) {
 
 function handleRowEdit(item) {
   editingItem.value = item
+}
+
+function toggleCategory(categoryId) {
+  const collapsed = new Set(collapsedCategories.value)
+
+  if (collapsed.has(categoryId)) {
+    collapsed.delete(categoryId)
+  } else {
+    collapsed.add(categoryId)
+  }
+
+  collapsedCategories.value = collapsed
 }
 
 async function handleToggleAvailability({ id, newStatus }) {
@@ -248,24 +261,44 @@ onUnmounted(() => clearTimeout(searchTimeout))
         :key="category.id"
         class="border-secondary-200 rounded-xl border bg-white shadow-sm"
       >
-        <header class="border-secondary-200 flex items-center gap-3 border-b px-4 py-3">
+        <header class="border-secondary-200 relative flex items-center gap-3 border-b px-4 py-3">
           <h2 class="text-secondary-900 text-base font-semibold">{{ category.name }}</h2>
           <span class="text-secondary-400 text-xs font-medium">
             {{ category.menu_items_count }} items visible to consumer
           </span>
+
+          <button
+            type="button"
+            class="border-secondary-200 text-secondary-500 hover:border-primary-300 hover:text-primary-600 focus:ring-primary-200 absolute bottom-0 left-1/2 z-10 flex h-7 w-7 -translate-x-1/2 translate-y-1/2 items-center justify-center rounded-full border bg-white shadow-sm transition focus:ring-2 focus:outline-none"
+            :aria-label="`${collapsedCategories.has(category.id) ? 'Expand' : 'Collapse'} ${category.name}`"
+            :aria-expanded="!collapsedCategories.has(category.id)"
+            :aria-controls="`category-items-${category.id}`"
+            @click="toggleCategory(category.id)"
+          >
+            <ChevronDownIcon
+              class="h-4 w-4 transition-transform"
+              :class="{ 'rotate-180': !collapsedCategories.has(category.id) }"
+            />
+          </button>
         </header>
 
-        <div class="divide-secondary-200 divide-y">
-          <MenuItemRow
-            v-for="item in category.items"
-            :key="item.id"
-            :menu-item="item"
-            :updating="!!updatingItems[item.id]"
-            @toggle-availability="handleToggleAvailability"
-            @edit="handleRowEdit(item)"
-            @view="handleView(item.id)"
-          />
-        </div>
+        <Transition name="category-items">
+          <div
+            v-show="!collapsedCategories.has(category.id)"
+            :id="`category-items-${category.id}`"
+            class="divide-secondary-200 divide-y"
+          >
+            <MenuItemRow
+              v-for="item in category.items"
+              :key="item.id"
+              :menu-item="item"
+              :updating="!!updatingItems[item.id]"
+              @toggle-availability="handleToggleAvailability"
+              @edit="handleRowEdit(item)"
+              @view="handleView(item.id)"
+            />
+          </div>
+        </Transition>
       </section>
     </div>
 
@@ -286,3 +319,32 @@ onUnmounted(() => clearTimeout(searchTimeout))
     />
   </div>
 </template>
+
+<style scoped>
+.category-items-enter-active,
+.category-items-leave-active {
+  overflow: hidden;
+  transition:
+    max-height 250ms ease,
+    opacity 200ms ease;
+}
+
+.category-items-enter-from,
+.category-items-leave-to {
+  max-height: 0;
+  opacity: 0;
+}
+
+.category-items-enter-to,
+.category-items-leave-from {
+  max-height: 2000px;
+  opacity: 1;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .category-items-enter-active,
+  .category-items-leave-active {
+    transition: none;
+  }
+}
+</style>
