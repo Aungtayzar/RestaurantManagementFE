@@ -14,13 +14,14 @@ vi.mock('@/api/categories', () => ({
   getCategories: vi.fn(),
   createCategory: vi.fn(),
   updateCategory: vi.fn(),
+  deleteCategory: vi.fn(),
 }))
 vi.mock('vue3-toastify', () => ({
   toast: { info: vi.fn(), success: vi.fn(), error: vi.fn() },
 }))
 
 import { getMenuItems, updateMenuItem } from '@/api/menuItems'
-import { getCategories } from '@/api/categories'
+import { deleteCategory, getCategories } from '@/api/categories'
 import { toast } from 'vue3-toastify'
 import MenuItemsView from '../MenuItemsView.vue'
 import MenuItemRow from '@/components/menu/MenuItemRow.vue'
@@ -93,6 +94,7 @@ describe('MenuItemsView', () => {
       }),
     )
     getCategories.mockResolvedValue(categoriesPayload)
+    deleteCategory.mockResolvedValue({})
   })
 
   afterEach(() => {
@@ -205,6 +207,61 @@ describe('MenuItemsView', () => {
     expect(region.text()).toContain('Starters')
     expect(region.text()).toContain('Desserts')
     expect(region.text()).not.toContain('New Category')
+  })
+
+  it('renders the category delete button hidden until its row is hovered', async () => {
+    const wrapper = await mountView()
+    const deleteButton = wrapper.find('button[aria-label="Delete Mains"]')
+
+    expect(deleteButton.exists()).toBe(true)
+    expect(deleteButton.classes()).toContain('opacity-0')
+    expect(deleteButton.classes()).toContain('group-hover:opacity-100')
+  })
+
+  it('confirms and deletes a category before refreshing the lists', async () => {
+    getCategories
+      .mockResolvedValueOnce(categoriesPayload)
+      .mockResolvedValueOnce({ ...categoriesPayload, data: categoriesPayload.data.slice(1) })
+    const wrapper = await mountView()
+
+    await wrapper.find('button[aria-label="Delete Mains"]').trigger('click')
+    await flushPromises()
+
+    expect(document.body.textContent).toContain('Are you sure you want to delete Mains?')
+    document.querySelector('[data-testid="confirm-delete-button"]').click()
+    await flushPromises()
+
+    expect(deleteCategory).toHaveBeenCalledWith(1)
+    expect(toast.success).toHaveBeenCalledWith('Category deleted successfully')
+    expect(wrapper.text()).not.toContain('Mains')
+  })
+
+  it('does not delete a category when confirmation is cancelled', async () => {
+    const wrapper = await mountView()
+
+    await wrapper.find('button[aria-label="Delete Mains"]').trigger('click')
+    await flushPromises()
+    document.querySelector('[data-testid="cancel-delete-button"]').click()
+    await flushPromises()
+
+    expect(deleteCategory).not.toHaveBeenCalled()
+    expect(document.body.textContent).not.toContain('Are you sure you want to delete Mains?')
+  })
+
+  it('shows the API message when category deletion fails', async () => {
+    deleteCategory.mockRejectedValueOnce({
+      response: { data: { message: 'Cannot delete a category that still contains menu items.' } },
+    })
+    const wrapper = await mountView()
+
+    await wrapper.find('button[aria-label="Delete Mains"]').trigger('click')
+    await flushPromises()
+    document.querySelector('[data-testid="confirm-delete-button"]').click()
+    await flushPromises()
+
+    expect(toast.error).toHaveBeenCalledWith(
+      'Cannot delete a category that still contains menu items.',
+    )
   })
 
   it('renders the availability filter buttons', async () => {

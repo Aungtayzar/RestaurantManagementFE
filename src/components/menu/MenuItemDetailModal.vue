@@ -1,17 +1,12 @@
 <script setup>
 import { ref, watch } from 'vue'
-import {
-  Dialog,
-  DialogPanel,
-  DialogTitle,
-  TransitionChild,
-  TransitionRoot,
-} from '@headlessui/vue'
+import { Dialog, DialogPanel, DialogTitle, TransitionChild, TransitionRoot } from '@headlessui/vue'
 import { CakeIcon, PencilIcon, TrashIcon, XMarkIcon } from '@heroicons/vue/24/outline'
 import { ArrowPathIcon } from '@heroicons/vue/20/solid'
 import { toast } from 'vue3-toastify'
 import { getMenuItem, deleteMenuItem, getImageUrl } from '@/api/menuItems'
 import BaseSkeleton from '@/components/common/BaseSkeleton.vue'
+import DeleteConfirmationModal from '@/components/common/DeleteConfirmationModal.vue'
 
 const props = defineProps({
   open: { type: Boolean, default: false },
@@ -202,9 +197,7 @@ async function handleDeleteConfirm() {
 
               <div v-else-if="menuItem" class="space-y-5 p-6">
                 <section>
-                  <h4
-                    class="text-secondary-400 mb-2 text-xs font-semibold tracking-wide uppercase"
-                  >
+                  <h4 class="text-secondary-400 mb-2 text-xs font-semibold tracking-wide uppercase">
                     Image
                   </h4>
                   <div
@@ -221,9 +214,7 @@ async function handleDeleteConfirm() {
                 </section>
 
                 <section>
-                  <h4
-                    class="text-secondary-400 mb-2 text-xs font-semibold tracking-wide uppercase"
-                  >
+                  <h4 class="text-secondary-400 mb-2 text-xs font-semibold tracking-wide uppercase">
                     Details
                   </h4>
                   <div class="space-y-2 text-sm">
@@ -252,9 +243,7 @@ async function handleDeleteConfirm() {
                 </section>
 
                 <section>
-                  <h4
-                    class="text-secondary-400 mb-2 text-xs font-semibold tracking-wide uppercase"
-                  >
+                  <h4 class="text-secondary-400 mb-2 text-xs font-semibold tracking-wide uppercase">
                     Variants
                   </h4>
                   <div
@@ -277,10 +266,7 @@ async function handleDeleteConfirm() {
                         </tr>
                       </thead>
                       <tbody class="divide-secondary-200 divide-y">
-                        <tr
-                          v-for="variant in menuItem.variants"
-                          :key="variant.id"
-                        >
+                        <tr v-for="variant in menuItem.variants" :key="variant.id">
                           <td class="text-secondary-900 px-4 py-2.5">
                             {{ variant.name }}
                           </td>
@@ -291,7 +277,7 @@ async function handleDeleteConfirm() {
                       </tbody>
                     </table>
                   </div>
-                  <p v-else class="text-secondary-400 italic text-sm">No variants</p>
+                  <p v-else class="text-secondary-400 text-sm italic">No variants</p>
                 </section>
 
                 <div class="flex justify-end gap-3 pt-2">
@@ -319,70 +305,14 @@ async function handleDeleteConfirm() {
           </TransitionChild>
         </div>
       </div>
-
-      <TransitionRoot appear :show="showDeleteConfirm" as="template">
-        <Dialog as="div" class="relative z-[60]" @close="handleDeleteCancel">
-          <TransitionChild
-            as="template"
-            enter="duration-300 ease-out"
-            enter-from="opacity-0"
-            enter-to="opacity-100"
-            leave="duration-200 ease-in"
-            leave-from="opacity-100"
-            leave-to="opacity-0"
-          >
-            <div class="bg-secondary-900/50 fixed inset-0" />
-          </TransitionChild>
-
-          <div class="fixed inset-0 overflow-y-auto">
-            <div class="flex min-h-full items-center justify-center p-4">
-              <TransitionChild
-                as="template"
-                enter="duration-300 ease-out"
-                enter-from="scale-95 opacity-0"
-                enter-to="scale-100 opacity-100"
-                leave="duration-200 ease-in"
-                leave-from="scale-100 opacity-100"
-                leave-to="scale-95 opacity-0"
-              >
-                <DialogPanel
-                  class="w-full max-w-sm rounded-xl bg-white p-6 shadow-xl"
-                >
-                  <DialogTitle
-                    as="h3"
-                    class="text-secondary-900 text-lg font-semibold"
-                  >
-                    Delete {{ menuItem?.name }}?
-                  </DialogTitle>
-                  <p class="text-secondary-500 mt-2 text-sm">
-                    This action cannot be undone.
-                  </p>
-                  <div class="mt-5 flex justify-end gap-3">
-                    <button
-                      type="button"
-                      data-testid="cancel-delete-button"
-                      class="border-secondary-300 text-secondary-700 hover:bg-secondary-50 rounded-lg border bg-white px-4 py-2.5 text-sm font-semibold transition disabled:cursor-not-allowed disabled:opacity-50"
-                      :disabled="isDeleting"
-                      @click="handleDeleteCancel"
-                    >
-                      Cancel
-                    </button>
-                    <button
-                      type="button"
-                      data-testid="confirm-delete-button"
-                      class="bg-danger-600 hover:bg-danger-700 focus:ring-danger-200 disabled:bg-danger-400 rounded-lg px-4 py-2.5 text-sm font-semibold text-white transition-colors focus:ring-2 focus:outline-none disabled:cursor-not-allowed"
-                      :disabled="isDeleting"
-                      @click="handleDeleteConfirm"
-                    >
-                      {{ isDeleting ? 'Deleting…' : 'Delete' }}
-                    </button>
-                  </div>
-                </DialogPanel>
-              </TransitionChild>
-            </div>
-          </div>
-        </Dialog>
-      </TransitionRoot>
     </Dialog>
   </TransitionRoot>
+
+  <DeleteConfirmationModal
+    :open="showDeleteConfirm"
+    :item-name="menuItem?.name ?? 'this menu item'"
+    :loading="isDeleting"
+    @close="handleDeleteCancel"
+    @confirm="handleDeleteConfirm"
+  />
 </template>

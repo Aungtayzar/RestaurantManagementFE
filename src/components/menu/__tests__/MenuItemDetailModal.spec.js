@@ -133,7 +133,7 @@ describe('MenuItemDetailModal', () => {
     deleteButton.click()
     await flushPromises()
 
-    expect(document.body.textContent).toContain('Delete Chicken Curry?')
+    expect(document.body.textContent).toContain('Are you sure you want to delete Chicken Curry?')
     expect(document.body.textContent).toContain('This action cannot be undone.')
   })
 

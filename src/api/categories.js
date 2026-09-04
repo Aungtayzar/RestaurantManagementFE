@@ -15,3 +15,14 @@ export async function updateCategory(id, formData) {
   const response = await apiClient.post(`/categories/${id}`, formData)
   return response.data
 }
+
+export async function deleteCategory(id) {
+  const response = await apiClient.delete(`/categories/${id}`)
+  return response.data
+}
+
+export function getCategoryImageUrl(path) {
+  if (!path) return ''
+  const baseUrl = apiClient.defaults.baseURL.replace('/api', '')
+  return `${baseUrl}/storage/${path}`
+}

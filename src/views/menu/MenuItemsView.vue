@@ -1,10 +1,17 @@
 <script setup>
 import { computed, onUnmounted, ref, watch } from 'vue'
-import { ArrowPathIcon, MagnifyingGlassIcon, PencilIcon, PlusIcon } from '@heroicons/vue/24/outline'
+import {
+  ArrowPathIcon,
+  MagnifyingGlassIcon,
+  PencilIcon,
+  PlusIcon,
+  TrashIcon,
+} from '@heroicons/vue/24/outline'
 import { toast } from 'vue3-toastify'
 import { getMenuItems, updateMenuItem } from '@/api/menuItems'
-import { getCategories } from '@/api/categories'
+import { deleteCategory, getCategories } from '@/api/categories'
 import CategoryFormModal from '@/components/menu/CategoryFormModal.vue'
+import DeleteConfirmationModal from '@/components/common/DeleteConfirmationModal.vue'
 import MenuItemDetailModal from '@/components/menu/MenuItemDetailModal.vue'
 import MenuItemFormModal from '@/components/menu/MenuItemFormModal.vue'
 import MenuItemRow from '@/components/menu/MenuItemRow.vue'
@@ -30,6 +37,8 @@ const detailItemId = ref(null)
 const updatingItems = ref({})
 const isCategoryCreateOpen = ref(false)
 const editingCategory = ref(null)
+const deletingCategoryId = ref(null)
+const categoryPendingDelete = ref(null)
 const isInitialized = ref(false)
 let searchTimeout
 
@@ -102,6 +111,34 @@ async function handleCategorySaved(category) {
   closeCategoryModal()
   await fetchCategories({ preferredCategoryId: categoryId })
   await fetchMenuItems()
+}
+
+function handleDeleteCategory(category) {
+  categoryPendingDelete.value = category
+}
+
+function closeDeleteCategoryModal() {
+  if (!deletingCategoryId.value) categoryPendingDelete.value = null
+}
+
+async function confirmDeleteCategory() {
+  const category = categoryPendingDelete.value
+  if (!category || deletingCategoryId.value) return
+
+  deletingCategoryId.value = category.id
+  try {
+    await deleteCategory(category.id)
+    await fetchCategories()
+    await fetchMenuItems()
+    toast.success('Category deleted successfully')
+    categoryPendingDelete.value = null
+  } catch (deleteError) {
+    const message =
+      deleteError.response?.data?.message ?? 'Failed to delete category. Please try again.'
+    toast.error(message)
+  } finally {
+    deletingCategoryId.value = null
+  }
 }
 
 function closeDetailModal() {
@@ -186,6 +223,15 @@ onUnmounted(() => clearTimeout(searchTimeout))
               @click="selectedCategory = String(category.id)"
             >
               <span class="block truncate">{{ category.name }}</span>
+            </button>
+            <button
+              type="button"
+              :aria-label="`Delete ${category.name}`"
+              class="text-secondary-400 hover:bg-danger-50 hover:text-danger-600 inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-md opacity-0 transition group-focus-within:opacity-100 group-hover:opacity-100 disabled:cursor-not-allowed disabled:opacity-50"
+              :disabled="deletingCategoryId === category.id"
+              @click.stop="handleDeleteCategory(category)"
+            >
+              <TrashIcon class="h-4 w-4" />
             </button>
             <span
               class="mr-1 rounded-md px-2 py-0.5 text-xs font-semibold"
@@ -294,7 +340,7 @@ onUnmounted(() => clearTimeout(searchTimeout))
         </p>
         <div
           v-else
-          class="border-secondary-200 divide-secondary-200 divide-y overflow-hidden rounded-xl border bg-white shadow-sm"
+          class="border-secondary-200 divide-secondary-200 divide-y rounded-xl border bg-white shadow-sm"
         >
           <MenuItemRow
             v-for="item in visibleItems"
@@ -314,6 +360,14 @@ onUnmounted(() => clearTimeout(searchTimeout))
       :category="editingCategory"
       @close="closeCategoryModal"
       @saved="handleCategorySaved"
+    />
+    <DeleteConfirmationModal
+      :open="!!categoryPendingDelete"
+      :item-name="categoryPendingDelete?.name ?? 'this category'"
+      message="The category must be empty before it can be deleted. This action cannot be undone."
+      :loading="!!deletingCategoryId"
+      @close="closeDeleteCategoryModal"
+      @confirm="confirmDeleteCategory"
     />
     <MenuItemFormModal
       :open="!!editingItem || isCreateOpen"
