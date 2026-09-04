@@ -193,9 +193,9 @@ onUnmounted(() => clearTimeout(searchTimeout))
   <div>
     <h1 class="text-secondary-900 mb-6 text-2xl font-bold">Menu Items</h1>
 
-    <div class="grid items-start gap-5 lg:grid-cols-[17rem_minmax(0,1fr)]">
+    <div class="grid items-start gap-5 lg:grid-cols-[19rem_minmax(0,1fr)]">
       <aside
-        class="border-secondary-200 flex max-h-[32rem] flex-col rounded-xl border bg-white p-4 shadow-sm lg:sticky lg:top-5 lg:h-[calc(100vh-9rem)] lg:max-h-none"
+        class="border-secondary-200 flex max-h-128 flex-col rounded-xl border bg-white p-2 shadow-sm md:p-4 lg:sticky lg:top-5 lg:h-[calc(100vh-9rem)] lg:max-h-none"
       >
         <h2 class="text-secondary-900 mb-3 text-sm font-semibold">Categories</h2>
         <div
@@ -215,14 +215,22 @@ onUnmounted(() => clearTimeout(searchTimeout))
           >
             <button
               type="button"
-              class="min-w-0 flex-1 px-3 py-2.5 text-left text-sm font-medium"
+              class="flex min-w-0 flex-1 items-center gap-2 px-3 py-2.5 text-left text-sm font-medium"
               :class="
                 selectedCategory === String(category.id) ? 'text-primary-700' : 'text-secondary-700'
               "
+              :aria-label="`Select ${category.name}`"
               :aria-current="selectedCategory === String(category.id) ? 'true' : undefined"
+              :title="category.name"
               @click="selectedCategory = String(category.id)"
             >
-              <span class="block truncate">{{ category.name }}</span>
+              <span
+                data-testid="category-display-order"
+                class="text-secondary-400 w-5 shrink-0 text-right text-xs tabular-nums"
+              >
+                {{ category.display_order ?? 0 }}.
+              </span>
+              <span class="min-w-0 flex-1 truncate">{{ category.name }}</span>
             </button>
             <button
               type="button"

@@ -59,9 +59,9 @@ const menuItemsPayload = {
 
 const categoriesPayload = {
   data: [
-    { id: 1, name: 'Mains', menu_items_count: 1 },
-    { id: 2, name: 'Starters', menu_items_count: 1 },
-    { id: 3, name: 'Desserts', menu_items_count: 0 },
+    { id: 1, name: 'Mains', display_order: 1, menu_items_count: 1 },
+    { id: 2, name: 'Starters', display_order: 2, menu_items_count: 1 },
+    { id: 3, name: 'Desserts', display_order: 3, menu_items_count: 0 },
   ],
   links: { first: null, last: null, prev: null, next: null },
   meta: { current_page: 1, from: 1, last_page: 1, per_page: 100, to: 3, total: 3 },
@@ -124,7 +124,7 @@ describe('MenuItemsView', () => {
   it('selects the first category and switches the right pane from the sidebar', async () => {
     const wrapper = await mountView()
     expect(wrapper.find('button[aria-current="true"]').text()).toContain('Mains')
-    const startersButton = wrapper.findAll('button').find((button) => button.text() === 'Starters')
+    const startersButton = wrapper.find('button[aria-label="Select Starters"]')
     await startersButton.trigger('click')
     await flushPromises()
 
@@ -209,6 +209,21 @@ describe('MenuItemsView', () => {
     expect(region.text()).not.toContain('New Category')
   })
 
+  it('shows display order before the category name and exposes the full name on hover', async () => {
+    const longName = 'Seasonal Chef Specials and Limited Editions'
+    getCategories.mockResolvedValueOnce({
+      ...categoriesPayload,
+      data: [{ id: 9, name: longName, display_order: 12, menu_items_count: 0 }],
+    })
+    const wrapper = await mountView()
+    const categoryButton = wrapper.find(`button[aria-label="Select ${longName}"]`)
+
+    expect(categoryButton.find('[data-testid="category-display-order"]').text()).toBe('12.')
+    expect(categoryButton.text()).toMatch(/^12\.\s*Seasonal Chef Specials/)
+    expect(categoryButton.attributes('title')).toBe(longName)
+    expect(categoryButton.find('.truncate').exists()).toBe(true)
+  })
+
   it('renders the category delete button hidden until its row is hovered', async () => {
     const wrapper = await mountView()
     const deleteButton = wrapper.find('button[aria-label="Delete Mains"]')
@@ -276,7 +291,7 @@ describe('MenuItemsView', () => {
     const wrapper = await mountView()
     await flushPromises()
 
-    const startersButton = wrapper.findAll('button').find((button) => button.text() === 'Starters')
+    const startersButton = wrapper.find('button[aria-label="Select Starters"]')
     await startersButton.trigger('click')
     await flushPromises()
 
