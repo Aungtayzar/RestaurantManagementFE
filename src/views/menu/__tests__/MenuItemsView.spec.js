@@ -12,6 +12,8 @@ vi.mock('@/api/menuItems', () => ({
 }))
 vi.mock('@/api/categories', () => ({
   getCategories: vi.fn(),
+  createCategory: vi.fn(),
+  updateCategory: vi.fn(),
 }))
 vi.mock('vue3-toastify', () => ({
   toast: { info: vi.fn(), success: vi.fn(), error: vi.fn() },
@@ -29,52 +31,36 @@ const menuItemsPayload = {
   data: [
     {
       id: 1,
-      name: 'Mains',
-      image_path: null,
-      display_order: 0,
-      menu_items_count: 1,
-      items: [
-        {
-          id: 1,
-          category_id: 1,
-          category_name: 'Mains',
-          name: 'Chicken Curry',
-          description: 'Spicy chicken curry',
-          base_price: '12.50',
-          image_path: 'menu-items/chicken-curry.jpg',
-          image_url: null,
-          is_available: true,
-        },
-      ],
+      category_id: 1,
+      category_name: 'Mains',
+      name: 'Chicken Curry',
+      description: 'Spicy chicken curry',
+      base_price: '12.50',
+      image_path: 'menu-items/chicken-curry.jpg',
+      image_url: null,
+      is_available: true,
+      variants: [{ id: 1, name: 'Large', price: '15.00' }],
     },
     {
       id: 2,
-      name: 'Starters',
+      category_id: 2,
+      category_name: 'Starters',
+      name: 'Caesar Salad',
+      description: 'Fresh caesar salad',
+      base_price: '8.00',
       image_path: null,
-      display_order: 0,
-      menu_items_count: 1,
-      items: [
-        {
-          id: 2,
-          category_id: 2,
-          category_name: 'Starters',
-          name: 'Caesar Salad',
-          description: 'Fresh caesar salad',
-          base_price: '8.00',
-          image_path: null,
-          image_url: null,
-          is_available: false,
-        },
-      ],
+      image_url: null,
+      is_available: false,
+      variants: [],
     },
   ],
 }
 
 const categoriesPayload = {
   data: [
-    { id: 1, name: 'Mains' },
-    { id: 2, name: 'Starters' },
-    { id: 3, name: 'Desserts' },
+    { id: 1, name: 'Mains', menu_items_count: 1 },
+    { id: 2, name: 'Starters', menu_items_count: 1 },
+    { id: 3, name: 'Desserts', menu_items_count: 0 },
   ],
   links: { first: null, last: null, prev: null, next: null },
   meta: { current_page: 1, from: 1, last_page: 1, per_page: 100, to: 3, total: 3 },
@@ -99,7 +85,13 @@ async function mountView() {
 describe('MenuItemsView', () => {
   beforeEach(() => {
     vi.clearAllMocks()
-    getMenuItems.mockResolvedValue(menuItemsPayload)
+    getMenuItems.mockImplementation(({ category_id } = {}) =>
+      Promise.resolve({
+        data: menuItemsPayload.data.filter(
+          (item) => category_id === undefined || String(item.category_id) === String(category_id),
+        ),
+      }),
+    )
     getCategories.mockResolvedValue(categoriesPayload)
   })
 
@@ -116,39 +108,27 @@ describe('MenuItemsView', () => {
     expect(newButton).toBeTruthy()
   })
 
-  it('renders category sections with a row for each menu item', async () => {
+  it('renders the category sidebar and only the selected category items', async () => {
     const wrapper = await mountView()
 
     const rows = wrapper.findAllComponents(MenuItemRow)
-    expect(rows).toHaveLength(2)
+    expect(rows).toHaveLength(1)
     expect(wrapper.text()).toContain('Mains')
     expect(wrapper.text()).toContain('Starters')
-    expect(wrapper.text()).toContain('1 items visible to consumer')
     expect(wrapper.text()).toContain('Chicken Curry')
-    expect(wrapper.text()).toContain('Caesar Salad')
+    expect(wrapper.text()).not.toContain('Caesar Salad')
   })
 
-  it('collapses and expands each category independently', async () => {
+  it('selects the first category and switches the right pane from the sidebar', async () => {
     const wrapper = await mountView()
-    const mainsToggle = wrapper.find('button[aria-label="Collapse Mains"]')
-    const mainsItems = wrapper.find('#category-items-1')
-    const startersItems = wrapper.find('#category-items-2')
+    expect(wrapper.find('button[aria-current="true"]').text()).toContain('Mains')
+    const startersButton = wrapper.findAll('button').find((button) => button.text() === 'Starters')
+    await startersButton.trigger('click')
+    await flushPromises()
 
-    expect(mainsToggle.attributes('aria-expanded')).toBe('true')
-    expect(mainsItems.isVisible()).toBe(true)
-    expect(startersItems.isVisible()).toBe(true)
-
-    await mainsToggle.trigger('click')
-
-    expect(wrapper.find('button[aria-label="Expand Mains"]').attributes('aria-expanded')).toBe(
-      'false',
-    )
-    expect(wrapper.find('#category-items-1').attributes('style')).toContain('display: none')
-    expect(startersItems.isVisible()).toBe(true)
-
-    await wrapper.find('button[aria-label="Expand Mains"]').trigger('click')
-
-    expect(wrapper.find('#category-items-1').isVisible()).toBe(true)
+    expect(wrapper.find('button[aria-current="true"]').text()).toContain('Starters')
+    expect(getMenuItems).toHaveBeenLastCalledWith(expect.objectContaining({ category_id: '2' }))
+    expect(wrapper.text()).toContain('Caesar Salad')
   })
 
   it('shows loading skeletons while fetching', async () => {
@@ -181,7 +161,7 @@ describe('MenuItemsView', () => {
   })
 
   it('shows an error message when the menu items API fails', async () => {
-    getMenuItems.mockRejectedValueOnce(new Error('boom'))
+    getMenuItems.mockRejectedValue(new Error('boom'))
     const wrapper = await mountView()
 
     expect(wrapper.text()).toContain('Failed to load menu items. Please try again.')
@@ -189,25 +169,25 @@ describe('MenuItemsView', () => {
   })
 
   it('shows the empty state when there are no menu items', async () => {
-    getMenuItems.mockResolvedValueOnce({ data: [] })
+    getMenuItems.mockResolvedValue({ data: [] })
     const wrapper = await mountView()
 
-    expect(wrapper.text()).toContain('No menu items found.')
+    expect(wrapper.text()).toContain('No menu items found in this category.')
   })
 
-  it('hides categories without any items', async () => {
-    getMenuItems.mockResolvedValueOnce({
+  it('keeps categories without items visible with a zero count', async () => {
+    getCategories.mockResolvedValue({
+      ...categoriesPayload,
       data: [
-        { id: 1, name: 'Mains', menu_items_count: 0, items: [] },
-        { id: 2, name: 'Starters', menu_items_count: 1, items: menuItemsPayload.data[1].items },
+        { id: 1, name: 'Mains', menu_items_count: 0 },
+        { id: 2, name: 'Starters', menu_items_count: 1 },
       ],
     })
     const wrapper = await mountView()
 
-    const headings = wrapper.findAll('h2').map((heading) => heading.text())
-
-    expect(wrapper.findAllComponents(MenuItemRow)).toHaveLength(1)
-    expect(headings).toEqual(['Starters'])
+    expect(wrapper.text()).toContain('Mains')
+    expect(wrapper.text()).toContain('Starters')
+    expect(wrapper.find('[data-testid="category-scroll-region"]').text()).toContain('Mains0')
   })
 
   it('shows an error toast when the categories API fails', async () => {
@@ -217,18 +197,14 @@ describe('MenuItemsView', () => {
     expect(toast.error).toHaveBeenCalledWith('Failed to load categories. Please try again.')
   })
 
-  it('populates the category filter from the categories API', async () => {
+  it('populates the scrollable category sidebar from the categories API', async () => {
     const wrapper = await mountView()
-
-    const categoryOptions = wrapper
-      .find('#menu-category-filter')
-      .findAll('option')
-      .map((option) => option.text())
-
-    expect(categoryOptions).toContain('All Categories')
-    expect(categoryOptions).toContain('Mains')
-    expect(categoryOptions).toContain('Starters')
-    expect(categoryOptions).toContain('Desserts')
+    const region = wrapper.find('[data-testid="category-scroll-region"]')
+    expect(region.classes()).toContain('overflow-y-auto')
+    expect(region.text()).toContain('Mains')
+    expect(region.text()).toContain('Starters')
+    expect(region.text()).toContain('Desserts')
+    expect(region.text()).not.toContain('New Category')
   })
 
   it('renders the availability filter buttons', async () => {
@@ -243,10 +219,11 @@ describe('MenuItemsView', () => {
     const wrapper = await mountView()
     await flushPromises()
 
-    await wrapper.find('#menu-category-filter').setValue('1')
+    const startersButton = wrapper.findAll('button').find((button) => button.text() === 'Starters')
+    await startersButton.trigger('click')
     await flushPromises()
 
-    expect(getMenuItems).toHaveBeenLastCalledWith(expect.objectContaining({ category_id: '1' }))
+    expect(getMenuItems).toHaveBeenLastCalledWith(expect.objectContaining({ category_id: '2' }))
   })
 
   it('passes the selected availability filter to the API', async () => {
@@ -298,7 +275,7 @@ describe('MenuItemsView', () => {
 
     const modal = wrapper.findComponent(MenuItemFormModal)
     expect(modal.props('open')).toBe(true)
-    expect(modal.props('menuItem')).toEqual(menuItemsPayload.data[0].items[0])
+    expect(modal.props('menuItem')).toEqual(menuItemsPayload.data[0])
   })
 
   it('opens the create modal when New Item is clicked', async () => {
@@ -355,14 +332,14 @@ describe('MenuItemsView', () => {
     await flushPromises()
 
     const detailModal = wrapper.findComponent(MenuItemDetailModal)
-    await detailModal.vm.$emit('edit', menuItemsPayload.data[0].items[0])
+    await detailModal.vm.$emit('edit', menuItemsPayload.data[0])
     await flushPromises()
 
     expect(wrapper.findComponent(MenuItemDetailModal).props('open')).toBe(false)
 
     const formModal = wrapper.findComponent(MenuItemFormModal)
     expect(formModal.props('open')).toBe(true)
-    expect(formModal.props('menuItem')).toEqual(menuItemsPayload.data[0].items[0])
+    expect(formModal.props('menuItem')).toEqual(menuItemsPayload.data[0])
   })
 
   it('calls updateMenuItem when a row emits toggle-availability', async () => {
@@ -370,7 +347,7 @@ describe('MenuItemsView', () => {
     const wrapper = await mountView()
 
     const firstRow = wrapper.findAllComponents(MenuItemRow).at(0)
-    await firstRow.vm.$emit('toggle-availability', { id: 1, currentStatus: true })
+    await firstRow.vm.$emit('toggle-availability', { id: 1, newStatus: false })
     await flushPromises()
 
     expect(updateMenuItem).toHaveBeenCalledTimes(1)
@@ -378,7 +355,7 @@ describe('MenuItemsView', () => {
     expect(id).toBe(1)
     expect(formData.get('is_available')).toBe('0')
     expect(toast.success).toHaveBeenCalledWith('Item marked as unavailable')
-    expect(getMenuItems).toHaveBeenCalledTimes(2)
+    expect(getMenuItems).toHaveBeenCalledTimes(1)
   })
 
   it('shows error toast when toggle-availability fails', async () => {
@@ -386,24 +363,24 @@ describe('MenuItemsView', () => {
     const wrapper = await mountView()
 
     const firstRow = wrapper.findAllComponents(MenuItemRow).at(0)
-    await firstRow.vm.$emit('toggle-availability', { id: 1, currentStatus: true })
+    await firstRow.vm.$emit('toggle-availability', { id: 1, newStatus: false })
     await flushPromises()
 
     expect(toast.error).toHaveBeenCalledWith('Failed to update availability. Please try again.')
   })
 
   it('clicking Retry refetches menu items after an error', async () => {
-    getMenuItems.mockRejectedValueOnce(new Error('boom'))
+    getMenuItems.mockRejectedValue(new Error('boom'))
     const wrapper = await mountView()
 
     expect(wrapper.text()).toContain('Failed to load menu items')
 
-    getMenuItems.mockResolvedValueOnce(menuItemsPayload)
+    getMenuItems.mockResolvedValue({ data: [menuItemsPayload.data[0]] })
     const retryButton = wrapper.findAll('button').find((b) => b.text().includes('Retry'))
     await retryButton.trigger('click')
     await flushPromises()
 
     expect(getMenuItems).toHaveBeenCalledTimes(2)
-    expect(wrapper.findAllComponents(MenuItemRow)).toHaveLength(2)
+    expect(wrapper.findAllComponents(MenuItemRow)).toHaveLength(1)
   })
 })

@@ -16,6 +16,7 @@ function createMenuItem(overrides = {}) {
     image_path: 'menu-items/chicken-curry.jpg',
     image_url: null,
     is_available: true,
+    variants: [],
     ...overrides,
   }
 }
@@ -82,6 +83,19 @@ describe('MenuItemRow', () => {
   it('displays the formatted base price', () => {
     const wrapper = createWrapper()
     expect(wrapper.text()).toContain('$12.50')
+  })
+
+  it('displays variant names and prices returned by the menu items endpoint', () => {
+    const wrapper = createWrapper({
+      menuItem: createMenuItem({
+        variants: [
+          { id: 10, name: 'Small', price: '9.00' },
+          { id: 11, name: 'Large', price: '15.00' },
+        ],
+      }),
+    })
+
+    expect(wrapper.text()).toContain('Small $9.00 · Large $15.00')
   })
 
   it('emits toggle-availability with the current status when switched', async () => {

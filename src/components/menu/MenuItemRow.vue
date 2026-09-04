@@ -9,6 +9,7 @@ const props = defineProps({
     type: Object,
     required: true,
   },
+  updating: { type: Boolean, default: false },
 })
 
 const emit = defineEmits(['toggle-availability', 'edit', 'view'])
@@ -25,6 +26,12 @@ const trimmedDescription = computed(() => {
   return `${words.slice(0, MAX_DESCRIPTION_WORDS).join(' ')}…`
 })
 
+const variantSummary = computed(() =>
+  (props.menuItem.variants ?? [])
+    .map((variant) => `${variant.name} ${formatPrice(variant.price)}`)
+    .join(' · '),
+)
+
 function formatPrice(price) {
   return `$${Number.parseFloat(price).toFixed(2)}`
 }
@@ -32,7 +39,7 @@ function formatPrice(price) {
 function toggleAvailability() {
   emit('toggle-availability', {
     id: props.menuItem.id,
-    newStatus: !props.menuItem.is_available,
+    currentStatus: props.menuItem.is_available,
   })
 }
 </script>
@@ -62,6 +69,9 @@ function toggleAvailability() {
 
       <p class="text-primary-600 w-20 shrink-0 text-sm font-semibold">
         {{ formatPrice(menuItem.base_price) }}
+      </p>
+      <p v-if="variantSummary" class="text-secondary-500 truncate text-xs">
+        {{ variantSummary }}
       </p>
     </div>
 

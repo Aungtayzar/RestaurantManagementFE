@@ -18,6 +18,7 @@ const props = defineProps({
   open: { type: Boolean, default: false },
   categories: { type: Array, default: () => [] },
   menuItem: { type: Object, default: null },
+  defaultCategoryId: { type: [String, Number], default: '' },
 })
 
 const emit = defineEmits(['close', 'saved'])
@@ -57,7 +58,9 @@ function resetForm() {
   form.name = props.menuItem?.name ?? ''
   form.description = props.menuItem?.description ?? ''
   form.base_price = props.menuItem?.base_price ?? ''
-  form.category_id = props.menuItem?.category_id ? String(props.menuItem.category_id) : ''
+  form.category_id = props.menuItem?.category_id
+    ? String(props.menuItem.category_id)
+    : String(props.defaultCategoryId || '')
   form.is_available = props.menuItem ? Boolean(props.menuItem.is_available) : true
   variants.value = (props.menuItem?.variants ?? []).map((variant) => ({
     name: variant.name,
