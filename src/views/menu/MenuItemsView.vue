@@ -309,7 +309,7 @@ onUnmounted(() => clearTimeout(searchTimeout))
               v-for="option in AVAILABILITY_OPTIONS"
               :key="option.value"
               type="button"
-              class="rounded-md px-3 py-1.5 text-sm font-medium transition-colors"
+              class="cursor-pointer rounded-md px-3 py-1.5 text-sm font-medium transition-colors"
               :class="
                 selectedAvailability === option.value
                   ? 'bg-primary-600 text-white'
