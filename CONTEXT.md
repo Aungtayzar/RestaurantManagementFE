@@ -4,6 +4,11 @@ Single-context glossary for the Restaurant Management System frontend.
 
 ## Glossary
 
+- **Restaurant Table** — a named seating resource belonging to one branch, with a
+  seating capacity and an active or inactive state. Avoid: database table.
+- **Table Management** — maintaining restaurant tables and viewing their reported
+  occupancy; seating guests and opening orders are separate workflows.
+
 - **session token** — the auth credential returned by `POST /login` and held by the
   auth store (`src/stores/auth.js`). It authorizes subsequent API requests. Distinct
   from the `reset_token` used only during password reset.

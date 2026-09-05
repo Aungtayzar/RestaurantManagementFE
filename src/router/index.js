@@ -29,6 +29,12 @@ const router = createRouter({
       meta: { requiresAuth: true },
       children: [
         {
+          path: 'tables',
+          name: 'tables',
+          component: () => import('@/views/tables/TablesView.vue'),
+          meta: { roles: ['admin', 'manager', 'cashier'] },
+        },
+        {
           path: '',
           name: 'dashboard',
           component: () => import('@/views/dashboard/DashboardIndexView.vue'),

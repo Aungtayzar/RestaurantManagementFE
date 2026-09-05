@@ -10,6 +10,7 @@ function createRouterStub() {
   return createRouter({
     history: createMemoryHistory(),
     routes: [
+      { path: '/dashboard/tables', name: 'tables', component: { template: '<div />' } },
       { path: '/dashboard', name: 'dashboard', component: { template: '<div />' } },
       { path: '/dashboard/branches', name: 'branches', component: { template: '<div />' } },
       { path: '/dashboard/staff', name: 'staff', component: { template: '<div />' } },
@@ -46,6 +47,13 @@ describe('AppSidebar', () => {
 
   afterEach(() => {
     vi.unstubAllGlobals()
+  })
+
+  it.each(['admin', 'manager', 'cashier', 'kitchen'])('gates the Tables link for %s', (role) => {
+    useAuthStore().user = { id: 1, roles: [role] }
+    const wrapper = mountSidebar(router)
+    expect(wrapper.find('a[href="/dashboard/tables"]').exists()).toBe(role !== 'kitchen')
+    wrapper.unmount()
   })
 
   it.each([['admin'], ['manager']])('shows the Menu Items link for %s', async (role) => {
