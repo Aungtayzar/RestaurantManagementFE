@@ -1,9 +1,11 @@
 <script setup>
 import {
   BuildingStorefrontIcon,
+  ClipboardDocumentListIcon,
   Squares2X2Icon,
   UsersIcon,
   TableCellsIcon,
+  ShoppingCartIcon,
 } from '@heroicons/vue/24/outline'
 import { computed, onMounted, onUnmounted, watch } from 'vue'
 import { useRoute } from 'vue-router'
@@ -18,6 +20,13 @@ const ui = useUiStore()
 
 const menuItems = [
   { name: 'dashboard', label: 'Dashboard', icon: Squares2X2Icon },
+  { name: 'pos', label: 'POS', icon: ShoppingCartIcon, roles: ['admin', 'manager', 'cashier'] },
+  {
+    name: 'orders',
+    label: 'Orders',
+    icon: ClipboardDocumentListIcon,
+    roles: ['admin', 'manager', 'cashier'],
+  },
   { name: 'branches', label: 'Branches', icon: BuildingStorefrontIcon, roles: ['admin'] },
   { name: 'menu-items', label: 'Menu Items', icon: MenuItemsIcon, roles: ['admin', 'manager'] },
   { name: 'tables', label: 'Tables', icon: TableCellsIcon, roles: ['admin', 'manager', 'cashier'] },

@@ -29,6 +29,18 @@ const router = createRouter({
       meta: { requiresAuth: true },
       children: [
         {
+          path: 'pos',
+          name: 'pos',
+          component: () => import('@/views/pos/PosView.vue'),
+          meta: { roles: ['admin', 'manager', 'cashier'] },
+        },
+        {
+          path: 'orders',
+          name: 'orders',
+          component: () => import('@/views/orders/OrdersView.vue'),
+          meta: { roles: ['admin', 'manager', 'cashier'] },
+        },
+        {
           path: 'tables',
           name: 'tables',
           component: () => import('@/views/tables/TablesView.vue'),

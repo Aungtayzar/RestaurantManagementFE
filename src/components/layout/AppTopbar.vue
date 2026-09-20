@@ -11,9 +11,7 @@ const router = useRouter()
 const auth = useAuthStore()
 const ui = useUiStore()
 
-const isToggleFlipped = computed(() =>
-  ui.isMobileViewport ? !ui.isMobileOpen : ui.isCollapsed,
-)
+const isToggleFlipped = computed(() => (ui.isMobileViewport ? !ui.isMobileOpen : ui.isCollapsed))
 
 const initials = computed(() =>
   (auth.user?.name ?? '?')
@@ -39,7 +37,7 @@ async function handleLogout() {
     <button
       type="button"
       aria-label="Toggle sidebar"
-      class="text-secondary-500 hover:bg-secondary-100 hover:text-secondary-700 relative rounded-lg p-2 transition-colors group focus:outline-none"
+      class="text-secondary-500 hover:bg-secondary-100 hover:text-secondary-700 group relative rounded-lg p-2 transition-colors focus:outline-none"
       @click="ui.toggleSidebar()"
     >
       <SidebarToggleIcon :class="isToggleFlipped ? 'rotate-180' : ''" />
@@ -59,7 +57,7 @@ async function handleLogout() {
       <button
         type="button"
         aria-label="Logout"
-        class="text-secondary-500 hover:bg-danger-50 hover:text-danger-600 relative ml-2 rounded-lg p-2 transition-colors group focus:outline-none"
+        class="text-secondary-500 hover:bg-danger-50 hover:text-danger-600 group relative ml-2 rounded-lg p-2 transition-colors focus:outline-none"
         @click="handleLogout"
       >
         <ArrowRightStartOnRectangleIcon class="h-5 w-5" />
