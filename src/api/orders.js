@@ -14,3 +14,8 @@ export async function payOrder(id, payload) {
   const response = await apiClient.post(`/orders/${id}/payment`, payload)
   return response.data
 }
+
+export async function updateOrderStatus(id, status) {
+  const response = await apiClient.patch(`/orders/${id}/status`, { status })
+  return response.data
+}

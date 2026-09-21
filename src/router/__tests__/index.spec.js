@@ -11,6 +11,7 @@ await Promise.all([
   import('@/views/branches/BranchesView.vue'),
   import('@/views/menu/MenuItemsView.vue'),
   import('@/views/tables/TablesView.vue'),
+  import('@/views/kitchen/KitchenDisplayView.vue'),
 ])
 
 function authenticate({ roles }) {
@@ -50,6 +51,15 @@ describe('router role guards', () => {
     await router.push('/dashboard/tables')
     expect(router.currentRoute.value.name).toBe(role === 'kitchen' ? 'dashboard' : 'tables')
   })
+
+  it.each(['admin', 'manager', 'cashier', 'kitchen'])(
+    'gates the kitchen page for %s',
+    async (role) => {
+      authenticate({ roles: [role] })
+      await router.push('/dashboard/kitchen')
+      expect(router.currentRoute.value.name).toBe(role === 'cashier' ? 'dashboard' : 'kitchen')
+    },
+  )
 
   it('lets admins access both the staff and branches pages', async () => {
     authenticate({ roles: ['admin'] })

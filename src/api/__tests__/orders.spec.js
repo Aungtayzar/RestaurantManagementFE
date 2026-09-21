@@ -1,9 +1,11 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-vi.mock('@/api/client', () => ({ default: { get: vi.fn(), post: vi.fn() } }))
+vi.mock('@/api/client', () => ({
+  default: { get: vi.fn(), post: vi.fn(), patch: vi.fn() },
+}))
 
 import client from '@/api/client'
-import { getOrder, getOrders, payOrder } from '../orders'
+import { getOrder, getOrders, payOrder, updateOrderStatus } from '../orders'
 
 describe('orders api', () => {
   beforeEach(() => vi.clearAllMocks())
@@ -30,5 +32,11 @@ describe('orders api', () => {
     client.post.mockResolvedValue({ data: { data: { id: 6 } } })
     expect(await payOrder(6, payload)).toEqual({ data: { id: 6 } })
     expect(client.post).toHaveBeenCalledWith('/orders/6/payment', payload)
+  })
+
+  it('updates an order status', async () => {
+    client.patch.mockResolvedValue({ data: { data: { id: 6, status: 'ready' } } })
+    expect(await updateOrderStatus(6, 'ready')).toEqual({ data: { id: 6, status: 'ready' } })
+    expect(client.patch).toHaveBeenCalledWith('/orders/6/status', { status: 'ready' })
   })
 })

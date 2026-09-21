@@ -6,6 +6,7 @@ import {
   UsersIcon,
   TableCellsIcon,
   ShoppingCartIcon,
+  FireIcon,
 } from '@heroicons/vue/24/outline'
 import { computed, onMounted, onUnmounted, watch } from 'vue'
 import { useRoute } from 'vue-router'
@@ -27,6 +28,7 @@ const menuItems = [
     icon: ClipboardDocumentListIcon,
     roles: ['admin', 'manager', 'cashier'],
   },
+  { name: 'kitchen', label: 'Kitchen', icon: FireIcon, roles: ['admin', 'manager', 'kitchen'] },
   { name: 'branches', label: 'Branches', icon: BuildingStorefrontIcon, roles: ['admin'] },
   { name: 'menu-items', label: 'Menu Items', icon: MenuItemsIcon, roles: ['admin', 'manager'] },
   { name: 'tables', label: 'Tables', icon: TableCellsIcon, roles: ['admin', 'manager', 'cashier'] },
