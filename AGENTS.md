@@ -101,6 +101,10 @@ Dev tooling: `vite`, `@vitejs/plugin-vue`, `vite-plugin-vue-devtools`, `vitest` 
 
 ## Agent skills
 
+### Frontend standards
+
+For every code-writing, code-review, or refactoring task in this frontend project, automatically read and apply `.agents/skills/frontend-standards/SKILL.md`. No explicit skill invocation is needed. Apply it alongside this file and the user's request.
+
 ### Issue tracker
 
 GitHub Issues (uses `gh` CLI). See `docs/agents/issue-tracker.md`.
