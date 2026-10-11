@@ -3,10 +3,15 @@ import { flushPromises, mount } from '@vue/test-utils'
 import { createPinia, setActivePinia } from 'pinia'
 
 vi.mock('@/api/branches', () => ({ getBranches: vi.fn() }))
-vi.mock('@/api/reports', () => ({ getKitchenReport: vi.fn() }))
+vi.mock('@/api/reports', () => ({
+  getKitchenReport: vi.fn(),
+  getPaymentReport: vi.fn(),
+  getPaymentReceipt: vi.fn(),
+  downloadPaymentReport: vi.fn(),
+}))
 
 import { getBranches } from '@/api/branches'
-import { getKitchenReport } from '@/api/reports'
+import { getKitchenReport, getPaymentReport } from '@/api/reports'
 import { useAuthStore } from '@/stores/auth'
 import DashboardIndexView from '../DashboardIndexView.vue'
 
@@ -32,6 +37,22 @@ describe('dashboard kitchen report', () => {
     setActivePinia(createPinia())
     getBranches.mockResolvedValue({ data: [{ id: 1, name: 'HQ Branch' }] })
     getKitchenReport.mockResolvedValue({ data: report })
+    getPaymentReport.mockResolvedValue({
+      data: {
+        period: { today: true },
+        summary: {
+          total_collected: '230.00',
+          dine_in_total: '115.00',
+          takeaway_total: '115.00',
+          paid_order_count: 2,
+          subtotal: '200.00',
+          tax_amount: '10.00',
+          service_charge_amount: '20.00',
+        },
+        branches: [{ id: 1, name: 'HQ', from: '2026-10-02', to: '2026-10-02' }],
+        cashiers: [],
+      },
+    })
   })
 
   it('loads the assigned branch report for managers', async () => {
@@ -65,12 +86,16 @@ describe('dashboard kitchen report', () => {
     wrapper.unmount()
   })
 
-  it('does not request reports for cashiers', async () => {
+  it('shows today’s personal payment totals for cashiers without kitchen reports', async () => {
     useAuthStore().user = { name: 'Cashier', roles: ['cashier'] }
     const wrapper = mount(DashboardIndexView)
     await flushPromises()
     expect(getKitchenReport).not.toHaveBeenCalled()
     expect(wrapper.text()).not.toContain('Kitchen operations')
+    expect(getPaymentReport).toHaveBeenCalledWith({ page: 1, per_page: 1 })
+    expect(wrapper.text()).toContain('Dine-in collected')
+    expect(wrapper.text()).toContain('Takeaway collected')
+    expect(wrapper.text()).toContain('230.00')
     wrapper.unmount()
   })
 })

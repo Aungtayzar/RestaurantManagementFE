@@ -13,8 +13,12 @@ import { getBranches } from '@/api/branches'
 import { getKitchenReport } from '@/api/reports'
 import { orderError } from '@/components/orders/orderErrors'
 import { useAuthStore } from '@/stores/auth'
+import DashboardPaymentReport from '@/components/reports/DashboardPaymentReport.vue'
 
 const auth = useAuthStore()
+const canViewPayments = computed(() =>
+  auth.user?.roles?.some((role) => ['admin', 'manager', 'cashier'].includes(role)),
+)
 const isAdmin = computed(() => auth.user?.roles?.includes('admin'))
 const canViewReport = computed(() =>
   auth.user?.roles?.some((role) => ['admin', 'manager'].includes(role)),
@@ -23,9 +27,12 @@ function dateInput(date) {
   return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`
 }
 const today = new Date()
-const from = ref(dateInput(new Date(today.getFullYear(), today.getMonth(), today.getDate() - 29)))
+const from = ref(dateInput(today))
 const to = ref(dateInput(today))
 const branchId = ref('')
+const appliedFrom = ref(from.value)
+const appliedTo = ref(to.value)
+const appliedBranchId = ref(branchId.value)
 const branches = ref([])
 const branchError = ref('')
 const report = ref(null)
@@ -63,7 +70,10 @@ function resetReport() {
 }
 
 async function loadReport() {
-  if (dateError.value || (isAdmin.value && !branchId.value)) return
+  if (dateError.value) return
+  appliedFrom.value = from.value
+  appliedTo.value = to.value
+  appliedBranchId.value = branchId.value
   const id = ++requestId
   loading.value = true
   error.value = ''
@@ -72,7 +82,7 @@ async function loadReport() {
     const result = await getKitchenReport({
       from: from.value,
       to: to.value,
-      branch_id: isAdmin.value ? Number(branchId.value) : undefined,
+      branch_id: isAdmin.value && branchId.value ? Number(branchId.value) : undefined,
     })
     if (!disposed && id === requestId) report.value = result.data
   } catch (cause) {
@@ -105,7 +115,7 @@ async function loadBranches() {
 onMounted(() => {
   if (!canViewReport.value) return
   if (isAdmin.value) loadBranches()
-  else loadReport()
+  loadReport()
 })
 onUnmounted(() => {
   disposed = true
@@ -171,7 +181,7 @@ onUnmounted(() => {
             <button
               type="submit"
               class="bg-primary-600 hover:bg-primary-700 focus:ring-primary-200 inline-flex min-h-11 items-center gap-2 rounded-lg px-5 py-2 text-sm font-semibold text-white shadow-sm focus:ring-2 focus:outline-none disabled:opacity-50"
-              :disabled="loading || Boolean(dateError) || (isAdmin && !branchId)"
+              :disabled="loading || Boolean(dateError)"
             >
               <ArrowPathIcon
                 class="size-4"
@@ -192,10 +202,9 @@ onUnmounted(() => {
             <select
               v-model="branchId"
               class="border-secondary-300 focus:border-primary-500 focus:ring-primary-100 text-secondary-900 min-h-11 w-full rounded-lg border bg-white px-3 py-2 text-sm focus:ring-2 focus:outline-none"
-              required
               @change="resetReport"
             >
-              <option value="">Select a branch</option>
+              <option value="">All branches</option>
               <option v-for="branch in branches" :key="branch.id" :value="String(branch.id)">
                 {{ branch.name }}
               </option>
@@ -213,6 +222,14 @@ onUnmounted(() => {
         </p>
       </template>
     </header>
+
+    <DashboardPaymentReport
+      v-if="canViewPayments"
+      :from="appliedFrom"
+      :to="appliedTo"
+      :branch-id="isAdmin ? appliedBranchId : ''"
+      :is-admin="isAdmin"
+    />
 
     <template v-if="canViewReport">
       <p
@@ -240,15 +257,6 @@ onUnmounted(() => {
         <div class="bg-secondary-200 h-64 animate-pulse rounded-2xl" />
         <span class="sr-only">Loading kitchen report…</span>
       </div>
-      <div
-        v-else-if="isAdmin && !branchId && !branchError"
-        class="border-secondary-300 rounded-2xl border border-dashed bg-white px-6 py-16 text-center"
-      >
-        <BuildingStorefrontIcon class="text-primary-500 mx-auto size-10" aria-hidden="true" />
-        <h2 class="text-secondary-900 mt-4 text-lg font-semibold">Choose a branch</h2>
-        <p class="text-secondary-500 mt-1 text-sm">Select a branch above to see its dashboard.</p>
-      </div>
-
       <template v-if="report">
         <div class="flex flex-wrap items-center justify-between gap-2">
           <div>

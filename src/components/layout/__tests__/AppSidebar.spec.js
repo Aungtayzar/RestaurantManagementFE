@@ -12,6 +12,11 @@ function createRouterStub() {
     routes: [
       { path: '/dashboard/pos', name: 'pos', component: { template: '<div />' } },
       { path: '/dashboard/orders', name: 'orders', component: { template: '<div />' } },
+      {
+        path: '/dashboard/reports/payments',
+        name: 'payment-report',
+        component: { template: '<div />' },
+      },
       { path: '/dashboard/kitchen', name: 'kitchen', component: { template: '<div />' } },
       { path: '/dashboard/tables', name: 'tables', component: { template: '<div />' } },
       { path: '/dashboard', name: 'dashboard', component: { template: '<div />' } },
@@ -56,6 +61,13 @@ describe('AppSidebar', () => {
     useAuthStore().user = { id: 1, roles: [role] }
     const wrapper = mountSidebar(router)
     expect(wrapper.find('a[href="/dashboard/pos"]').exists()).toBe(role !== 'kitchen')
+    wrapper.unmount()
+  })
+
+  it.each(['admin', 'manager', 'cashier', 'kitchen'])('gates the Payments link for %s', (role) => {
+    useAuthStore().user = { id: 1, roles: [role] }
+    const wrapper = mountSidebar(router)
+    expect(wrapper.find('a[href="/dashboard/reports/payments"]').exists()).toBe(role !== 'kitchen')
     wrapper.unmount()
   })
 

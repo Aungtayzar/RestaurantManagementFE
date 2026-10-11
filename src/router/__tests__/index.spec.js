@@ -12,6 +12,7 @@ await Promise.all([
   import('@/views/menu/MenuItemsView.vue'),
   import('@/views/tables/TablesView.vue'),
   import('@/views/kitchen/KitchenDisplayView.vue'),
+  import('@/views/reports/PaymentReportView.vue'),
 ])
 
 function authenticate({ roles }) {
@@ -33,6 +34,7 @@ describe('router role guards', () => {
     ['/dashboard/staff', 'staff'],
     ['/dashboard/tables', 'tables'],
     ['/dashboard/branches', 'branches'],
+    ['/dashboard/reports/payments', 'payment-report'],
   ])('redirects guests away from %s to the login page', async (path) => {
     await router.push(path)
     expect(router.currentRoute.value.name).toBe('login')
@@ -45,6 +47,17 @@ describe('router role guards', () => {
 
     expect(router.currentRoute.value.name).toBe('staff')
   })
+
+  it.each(['admin', 'manager', 'cashier', 'kitchen'])(
+    'gates payment reports for %s',
+    async (role) => {
+      authenticate({ roles: [role] })
+      await router.push('/dashboard/reports/payments')
+      expect(router.currentRoute.value.name).toBe(
+        role === 'kitchen' ? 'dashboard' : 'payment-report',
+      )
+    },
+  )
 
   it.each(['admin', 'manager', 'cashier', 'kitchen'])('gates tables for %s', async (role) => {
     authenticate({ roles: [role] })

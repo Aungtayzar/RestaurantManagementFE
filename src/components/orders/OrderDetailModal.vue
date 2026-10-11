@@ -4,10 +4,14 @@ import { Dialog, DialogPanel, DialogTitle } from '@headlessui/vue'
 import { XMarkIcon } from '@heroicons/vue/24/outline'
 import BaseButton from '@/components/common/BaseButton.vue'
 import { getOrder } from '@/api/orders'
+import { getPaymentReceipt } from '@/api/reports'
 import OrderStatusBadge from './OrderStatusBadge.vue'
 import { formatMoney, orderError } from './orderErrors'
 
-const props = defineProps({ orderId: { type: Number, required: true } })
+const props = defineProps({
+  orderId: { type: Number, default: null },
+  paymentId: { type: Number, default: null },
+})
 const emit = defineEmits(['close', 'pay'])
 
 const order = ref(null)
@@ -19,7 +23,9 @@ async function load() {
   loading.value = true
   error.value = ''
   try {
-    const result = await getOrder(props.orderId)
+    const result = props.paymentId
+      ? await getPaymentReceipt(props.paymentId)
+      : await getOrder(props.orderId)
     if (!disposed) order.value = result.data
   } catch (cause) {
     if (!disposed) error.value = orderError(cause, 'Could not load the order. Please try again.')
@@ -40,7 +46,9 @@ onUnmounted(() => (disposed = true))
         class="max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-2xl bg-white p-6 shadow-xl"
       >
         <div class="flex items-start justify-between gap-3">
-          <DialogTitle class="text-secondary-900 text-lg font-semibold">Order details</DialogTitle>
+          <DialogTitle class="text-secondary-900 text-lg font-semibold">{{
+            paymentId ? 'Payment receipt' : 'Order details'
+          }}</DialogTitle>
           <button
             type="button"
             class="text-secondary-400 hover:text-secondary-700"
@@ -76,8 +84,9 @@ onUnmounted(() => (disposed = true))
                 <p class="text-secondary-900 text-sm font-medium">
                   {{ item.quantity }}× {{ item.item_name }}
                 </p>
-                <p v-if="item.variant_name" class="text-secondary-500 text-xs">
-                  {{ item.variant_name }} · {{ formatMoney(item.unit_price) }} each
+                <p class="text-secondary-500 text-xs">
+                  {{ item.variant_name ? `${item.variant_name} · ` : ''
+                  }}{{ formatMoney(item.unit_price) }} each
                 </p>
                 <p v-if="item.notes" class="text-secondary-500 text-xs italic">
                   Note: {{ item.notes }}
@@ -105,6 +114,38 @@ onUnmounted(() => (disposed = true))
             <div class="text-secondary-900 flex justify-between text-base font-semibold">
               <dt>Total</dt>
               <dd class="tabular-nums">{{ formatMoney(order.total) }}</dd>
+            </div>
+          </dl>
+
+          <dl
+            v-if="order.payment"
+            class="border-secondary-200 mt-4 space-y-2 border-t pt-4 text-sm"
+          >
+            <div class="flex justify-between gap-4">
+              <dt>Payment method</dt>
+              <dd>{{ order.payment.payment_method }}</dd>
+            </div>
+            <div class="flex justify-between gap-4">
+              <dt>Cash received</dt>
+              <dd>{{ formatMoney(order.payment.amount_received) }}</dd>
+            </div>
+            <div class="flex justify-between gap-4">
+              <dt>Change</dt>
+              <dd>{{ formatMoney(order.payment.change_amount) }}</dd>
+            </div>
+            <div class="flex justify-between gap-4">
+              <dt>Accepted by</dt>
+              <dd>{{ order.payment.paid_by?.name }}</dd>
+            </div>
+            <div class="flex justify-between gap-4">
+              <dt>Paid at</dt>
+              <dd>
+                {{
+                  new Date(order.payment.paid_at).toLocaleString(undefined, {
+                    timeZone: order.branch.timezone,
+                  })
+                }}<span class="text-secondary-500 block text-xs">{{ order.branch.timezone }}</span>
+              </dd>
             </div>
           </dl>
 

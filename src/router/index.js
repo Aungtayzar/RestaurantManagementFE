@@ -41,6 +41,12 @@ const router = createRouter({
           meta: { roles: ['admin', 'manager', 'cashier'] },
         },
         {
+          path: 'reports/payments',
+          name: 'payment-report',
+          component: () => import('@/views/reports/PaymentReportView.vue'),
+          meta: { roles: ['admin', 'manager', 'cashier'] },
+        },
+        {
           path: 'kitchen',
           name: 'kitchen',
           component: () => import('@/views/kitchen/KitchenDisplayView.vue'),
