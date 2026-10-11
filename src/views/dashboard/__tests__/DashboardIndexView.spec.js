@@ -67,22 +67,33 @@ describe('dashboard kitchen report', () => {
     wrapper.unmount()
   })
 
-  it('requires admin branch selection and limits the date range', async () => {
+  it('refreshes when filters change and keeps the kitchen report visible while a request is pending', async () => {
     useAuthStore().user = { name: 'Admin', roles: ['admin'] }
     const wrapper = mount(DashboardIndexView)
     await flushPromises()
-    expect(wrapper.find('header form select').exists()).toBe(true)
-    expect(wrapper.find('header form input[type="date"]').exists()).toBe(true)
-    expect(wrapper.text()).not.toContain('Kitchen operations')
-    expect(getKitchenReport).not.toHaveBeenCalled()
+    expect(wrapper.find('header select').exists()).toBe(true)
+    expect(wrapper.find('header input[type="date"]').exists()).toBe(true)
+    expect(wrapper.text()).not.toContain('Apply')
+    expect(wrapper.text()).toContain('Orders received')
+
+    let resolveReport
+    getKitchenReport.mockImplementationOnce(() => new Promise((resolve) => { resolveReport = resolve }))
     await wrapper.find('select').setValue('1')
+    await flushPromises()
+    expect(getKitchenReport).toHaveBeenLastCalledWith(expect.objectContaining({ branch_id: 1 }))
+    expect(wrapper.text()).toContain('Orders received')
+    resolveReport({ data: { ...report, branch: { ...report.branch, name: 'Selected Branch' } } })
+    await flushPromises()
+    expect(wrapper.text()).toContain('Selected Branch')
+
+    const callCount = getKitchenReport.mock.calls.length
     await wrapper.find('input[type="date"]').setValue('2026-01-01')
     expect(wrapper.text()).toContain('The report period may not exceed 90 days.')
-    expect(getKitchenReport).not.toHaveBeenCalled()
+    expect(getKitchenReport).toHaveBeenCalledTimes(callCount)
+    expect(wrapper.text()).toContain('Selected Branch')
     await wrapper.find('input[type="date"]').setValue('2026-09-01')
-    await wrapper.find('form').trigger('submit')
     await flushPromises()
-    expect(getKitchenReport).toHaveBeenCalledWith(expect.objectContaining({ branch_id: 1 }))
+    expect(getKitchenReport).toHaveBeenLastCalledWith(expect.objectContaining({ branch_id: 1, from: '2026-09-01' }))
     wrapper.unmount()
   })
 
@@ -92,10 +103,44 @@ describe('dashboard kitchen report', () => {
     await flushPromises()
     expect(getKitchenReport).not.toHaveBeenCalled()
     expect(wrapper.text()).not.toContain('Kitchen operations')
-    expect(getPaymentReport).toHaveBeenCalledWith({ page: 1, per_page: 1 })
+    expect(getPaymentReport).toHaveBeenCalledWith({
+      from: expect.any(String),
+      to: expect.any(String),
+      per_page: 1,
+    })
     expect(wrapper.text()).toContain('Dine-in collected')
     expect(wrapper.text()).toContain('Takeaway collected')
     expect(wrapper.text()).toContain('230.00')
+    wrapper.unmount()
+  })
+
+  it('shows payment summary skeleton cards while payment data loads', async () => {
+    useAuthStore().user = { name: 'Cashier', roles: ['cashier'] }
+    let resolvePayment
+    getPaymentReport.mockImplementationOnce(() => new Promise((resolve) => { resolvePayment = resolve }))
+    const wrapper = mount(DashboardIndexView)
+
+    const status = wrapper.find('[aria-label="Loading payment overview"]')
+    expect(status.exists()).toBe(true)
+    expect(status.findAll('[aria-hidden="true"] > div')).toHaveLength(7)
+    expect(wrapper.text()).not.toContain('Dine-in collected')
+
+    resolvePayment({
+      data: {
+        summary: {
+          total_collected: '230.00',
+          dine_in_total: '115.00',
+          takeaway_total: '115.00',
+          paid_order_count: 2,
+          subtotal: '200.00',
+          tax_amount: '10.00',
+          service_charge_amount: '20.00',
+        },
+      },
+    })
+    await flushPromises()
+    expect(wrapper.find('[aria-label="Loading payment overview"]').exists()).toBe(false)
+    expect(wrapper.text()).toContain('Total collected')
     wrapper.unmount()
   })
 })

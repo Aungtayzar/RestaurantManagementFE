@@ -1,7 +1,6 @@
 <script setup>
-import { computed, onMounted, onUnmounted, ref } from 'vue'
+import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 import {
-  ArrowPathIcon,
   BuildingStorefrontIcon,
   ChartBarIcon,
   CheckCircleIcon,
@@ -62,22 +61,19 @@ function formatDuration(seconds) {
   return minutes ? `${minutes}m ${seconds % 60}s` : `${seconds}s`
 }
 
-function resetReport() {
-  requestId++
-  report.value = null
-  error.value = ''
-  loading.value = false
-}
-
 async function loadReport() {
-  if (dateError.value) return
+  if (dateError.value) {
+    requestId++
+    loading.value = false
+    error.value = ''
+    return
+  }
   appliedFrom.value = from.value
   appliedTo.value = to.value
   appliedBranchId.value = branchId.value
   const id = ++requestId
   loading.value = true
   error.value = ''
-  report.value = null
   try {
     const result = await getKitchenReport({
       from: from.value,
@@ -117,6 +113,9 @@ onMounted(() => {
   if (isAdmin.value) loadBranches()
   loadReport()
 })
+watch([from, to, branchId], () => {
+  if (canViewReport.value) loadReport()
+})
 onUnmounted(() => {
   disposed = true
   requestId++
@@ -150,10 +149,9 @@ onUnmounted(() => {
           </div>
         </div>
       </div>
-      <form
+      <div
         v-if="canViewReport"
         class="flex flex-col gap-5 p-5 sm:px-7 lg:flex-row lg:items-end lg:justify-between"
-        @submit.prevent="loadReport"
       >
         <div>
           <p class="text-secondary-900 text-sm font-semibold">Reporting period</p>
@@ -165,7 +163,6 @@ onUnmounted(() => {
                 type="date"
                 class="border-secondary-300 focus:border-primary-500 focus:ring-primary-100 text-secondary-900 min-h-11 rounded-lg border bg-white px-3 py-2 text-sm focus:ring-2 focus:outline-none"
                 required
-                @change="resetReport"
               />
             </label>
             <label class="text-secondary-600 flex flex-col gap-1.5 text-xs font-medium"
@@ -175,21 +172,8 @@ onUnmounted(() => {
                 type="date"
                 class="border-secondary-300 focus:border-primary-500 focus:ring-primary-100 text-secondary-900 min-h-11 rounded-lg border bg-white px-3 py-2 text-sm focus:ring-2 focus:outline-none"
                 required
-                @change="resetReport"
               />
             </label>
-            <button
-              type="submit"
-              class="bg-primary-600 hover:bg-primary-700 focus:ring-primary-200 inline-flex min-h-11 items-center gap-2 rounded-lg px-5 py-2 text-sm font-semibold text-white shadow-sm focus:ring-2 focus:outline-none disabled:opacity-50"
-              :disabled="loading || Boolean(dateError)"
-            >
-              <ArrowPathIcon
-                class="size-4"
-                :class="{ 'animate-spin': loading }"
-                aria-hidden="true"
-              />
-              {{ loading ? 'Loading…' : 'Apply' }}
-            </button>
           </div>
         </div>
         <div v-if="isAdmin" class="flex items-end gap-2 lg:min-w-56">
@@ -202,7 +186,6 @@ onUnmounted(() => {
             <select
               v-model="branchId"
               class="border-secondary-300 focus:border-primary-500 focus:ring-primary-100 text-secondary-900 min-h-11 w-full rounded-lg border bg-white px-3 py-2 text-sm focus:ring-2 focus:outline-none"
-              @change="resetReport"
             >
               <option value="">All branches</option>
               <option v-for="branch in branches" :key="branch.id" :value="String(branch.id)">
@@ -211,7 +194,7 @@ onUnmounted(() => {
             </select>
           </label>
         </div>
-      </form>
+      </div>
       <template v-if="canViewReport">
         <p v-if="dateError" role="alert" class="text-danger-700 px-5 pb-4 text-sm sm:px-7">
           {{ dateError }}

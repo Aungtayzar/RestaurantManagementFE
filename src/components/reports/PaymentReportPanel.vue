@@ -34,11 +34,13 @@ const branchError = ref('')
 const error = ref('')
 const exportError = ref('')
 const loading = ref(false)
-const exporting = ref(false)
+const exporting = ref('')
 const paymentId = ref(null)
 const applied = ref({ ...props.initialFilters })
 let requestId = 0
 let disposed = false
+let searchTimer
+let settingDefaultDates = false
 
 const dateError = computed(() => {
   if (!filters.value.from || !filters.value.to) return 'Choose both dates.'
@@ -67,12 +69,6 @@ function clearReport() {
   exportError.value = ''
 }
 
-function changeBranch() {
-  filters.value.cashier_id = ''
-  cashiers.value = []
-  clearReport()
-}
-
 async function load(params = applied.value, page = 1) {
   const id = ++requestId
   loading.value = true
@@ -85,6 +81,7 @@ async function load(params = applied.value, page = 1) {
     report.value = result.data
     cashiers.value = result.data.cashiers ?? []
     if (!params.from && result.data.branches.length) {
+      settingDefaultDates = true
       filters.value.from = result.data.branches[0].from
       filters.value.to = result.data.branches[0].to
     }
@@ -96,17 +93,8 @@ async function load(params = applied.value, page = 1) {
   }
 }
 
-function apply() {
-  if (dateError.value) return
-  const params = normalize(filters.value)
-  emit('apply', params)
-  load(params)
-}
-
 function today() {
-  const params = normalize({ ...filters.value, from: '', to: '' })
-  emit('apply', params)
-  load(params)
+  filters.value = { ...filters.value, from: '', to: '' }
 }
 
 async function loadBranches() {
@@ -130,7 +118,7 @@ async function loadBranches() {
 
 async function download(format) {
   if (exporting.value || !report.value) return
-  exporting.value = true
+  exporting.value = format
   exportError.value = ''
   try {
     await downloadPaymentReport(applied.value, format)
@@ -138,7 +126,7 @@ async function download(format) {
     if (!disposed)
       exportError.value = orderError(cause, 'Could not export payment report. Please try again.')
   } finally {
-    if (!disposed) exporting.value = false
+    if (!disposed) exporting.value = ''
   }
 }
 
@@ -158,6 +146,32 @@ watch(
   },
   { deep: true },
 )
+watch(
+  () => ({ ...filters.value }),
+  (values, previous) => {
+    if (settingDefaultDates) {
+      settingDefaultDates = false
+      return
+    }
+    clearTimeout(searchTimer)
+    if (values.branch_id !== previous.branch_id) {
+      filters.value.cashier_id = ''
+      values.cashier_id = ''
+      cashiers.value = []
+    }
+    if (dateError.value && (values.from || values.to)) {
+      clearReport()
+      return
+    }
+    const params = normalize(values)
+    const refresh = () => {
+      emit('apply', params)
+      load(params)
+    }
+    if (values.q !== previous.q) searchTimer = setTimeout(refresh, 300)
+    else refresh()
+  },
+)
 
 onMounted(() => {
   if (isAdmin.value) loadBranches()
@@ -165,6 +179,7 @@ onMounted(() => {
 })
 onUnmounted(() => {
   disposed = true
+  clearTimeout(searchTimer)
   requestId++
 })
 </script>
@@ -184,7 +199,7 @@ onUnmounted(() => {
         </div>
         <BaseButton variant="outline" :disabled="loading" @click="today">Today</BaseButton>
       </div>
-      <form class="flex flex-wrap items-end gap-3" @submit.prevent="apply">
+      <div class="flex flex-wrap items-end gap-3">
         <label class="text-secondary-600 flex flex-col gap-1 text-sm"
           >From
           <input
@@ -193,7 +208,6 @@ onUnmounted(() => {
             type="date"
             class="border-secondary-300 focus-visible:outline-primary-500 min-h-11 rounded-lg border px-3 py-2"
             required
-            @change="clearReport"
           />
         </label>
         <label class="text-secondary-600 flex flex-col gap-1 text-sm"
@@ -204,7 +218,6 @@ onUnmounted(() => {
             type="date"
             class="border-secondary-300 focus-visible:outline-primary-500 min-h-11 rounded-lg border px-3 py-2"
             required
-            @change="clearReport"
           />
         </label>
         <label v-if="isAdmin" class="text-secondary-600 flex flex-col gap-1 text-sm"
@@ -213,7 +226,6 @@ onUnmounted(() => {
             v-model="filters.branch_id"
             name="branch_id"
             class="border-secondary-300 focus-visible:outline-primary-500 min-h-11 rounded-lg border px-3 py-2"
-            @change="changeBranch"
           >
             <option value="">All branches</option>
             <option v-for="branch in branches" :key="branch.id" :value="String(branch.id)">
@@ -227,7 +239,6 @@ onUnmounted(() => {
             v-model="filters.cashier_id"
             name="cashier_id"
             class="border-secondary-300 focus-visible:outline-primary-500 min-h-11 rounded-lg border px-3 py-2"
-            @change="clearReport"
           >
             <option value="">All payment operators</option>
             <option v-for="cashier in cashiers" :key="cashier.id" :value="String(cashier.id)">
@@ -241,7 +252,6 @@ onUnmounted(() => {
             v-model="filters.type"
             name="type"
             class="border-secondary-300 focus-visible:outline-primary-500 min-h-11 rounded-lg border px-3 py-2"
-            @change="clearReport"
           >
             <option value="">All types</option>
             <option value="dine_in">Dine-in</option>
@@ -257,13 +267,9 @@ onUnmounted(() => {
             maxlength="100"
             placeholder="Search order number"
             class="border-secondary-300 focus-visible:outline-primary-500 min-h-11 rounded-lg border px-3 py-2"
-            @input="clearReport"
           />
         </label>
-        <BaseButton type="submit" :loading="loading" :disabled="Boolean(dateError)"
-          >Apply</BaseButton
-        >
-      </form>
+      </div>
       <p v-if="dateError && filters.from" role="alert" class="text-danger-700 text-sm">
         {{ dateError }}
       </p>
@@ -271,9 +277,24 @@ onUnmounted(() => {
         {{ branchError }} <button class="underline" @click="loadBranches">Retry branches</button>
       </p>
     </header>
-    <p v-if="loading" role="status" class="text-secondary-500 rounded-xl bg-white p-6">
-      Loading payment report…
-    </p>
+    <div v-if="loading" role="status" aria-label="Loading payment report" class="space-y-5">
+      <span class="sr-only">Loading payment report…</span>
+      <div aria-hidden="true" class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        <div
+          v-for="card in 7"
+          :key="card"
+          class="border-secondary-200 h-32 animate-pulse rounded-xl border bg-white"
+        />
+      </div>
+      <div v-if="!summaryOnly" aria-hidden="true" class="space-y-4">
+        <div class="bg-secondary-200 h-11 w-64 animate-pulse rounded-lg" />
+        <div
+          v-for="section in 3"
+          :key="section"
+          class="bg-secondary-200 h-48 animate-pulse rounded-xl"
+        />
+      </div>
+    </div>
     <p v-else-if="error" role="alert" class="bg-danger-50 text-danger-700 rounded-xl p-4">
       {{ error }} <button class="font-semibold underline" @click="load()">Retry</button>
     </p>
@@ -296,19 +317,21 @@ onUnmounted(() => {
         }}
       </p>
       <PaymentSummaryCards :summary="report.summary" />
-      <p v-if="!report.summary.paid_order_count" class="text-secondary-500 rounded-xl bg-white p-5">
-        No payments match these filters.
-      </p>
       <template v-if="!summaryOnly">
         <div v-if="canExport" class="flex flex-wrap gap-3">
-          <BaseButton variant="primary" :disabled="exporting" @click="download('csv')"
+          <BaseButton
+            variant="primary"
+            :loading="exporting === 'csv'"
+            :disabled="Boolean(exporting)"
+            @click="download('csv')"
             >Export CSV</BaseButton
           >
-          <BaseButton variant="primary" :disabled="exporting" @click="download('xlsx')"
+          <BaseButton
+            variant="primary"
+            :loading="exporting === 'xlsx'"
+            :disabled="Boolean(exporting)"
+            @click="download('xlsx')"
             >Export Excel</BaseButton
-          >
-          <span v-if="exporting" role="status" class="text-secondary-500 self-center text-sm"
-            >Preparing download…</span
           >
         </div>
         <p v-if="exportError" role="alert" class="text-danger-700 text-sm">{{ exportError }}</p>

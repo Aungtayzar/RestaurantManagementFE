@@ -89,7 +89,6 @@ describe('payment report', () => {
     await wrapper.find('[name="q"]').setValue('ORDER')
     await wrapper.find('[name="type"]').setValue('dine_in')
     await wrapper.find('[name="cashier_id"]').setValue('8')
-    await wrapper.find('form').trigger('submit')
     await flushPromises()
     const filters = {
       from: '2026-10-01',
@@ -179,7 +178,6 @@ describe('payment report', () => {
     await wrapper.find('[name="from"]').setValue('2026-01-01')
     await wrapper.find('[name="to"]').setValue('2026-12-31')
     expect(wrapper.find('[role="alert"]').exists()).toBe(false)
-    await wrapper.find('form').trigger('submit')
     await flushPromises()
     expect(getPaymentReport).toHaveBeenLastCalledWith(
       expect.objectContaining({ from: '2026-01-01', to: '2026-12-31' }),
@@ -187,7 +185,7 @@ describe('payment report', () => {
     wrapper.unmount()
   })
 
-  it('shows zero totals and disables downloads when filters are changed', async () => {
+  it('refreshes automatically when filters change', async () => {
     useAuthStore().user = { roles: ['manager'] }
     getPaymentReport.mockResolvedValueOnce({
       data: {
@@ -199,11 +197,11 @@ describe('payment report', () => {
     })
     const wrapper = mount(PaymentReportPanel)
     await flushPromises()
-    expect(wrapper.text()).toContain('No payments match these filters.')
     expect(wrapper.text()).toContain('0.00')
     await wrapper.find('[name="q"]').setValue('OTHER')
-    expect(wrapper.text()).not.toContain('Export CSV')
-    expect(wrapper.text()).toContain('Apply filters to view payments.')
+    await new Promise((resolve) => setTimeout(resolve, 320))
+    await flushPromises()
+    expect(getPaymentReport).toHaveBeenLastCalledWith(expect.objectContaining({ q: 'OTHER' }))
     wrapper.unmount()
   })
 
@@ -218,7 +216,7 @@ describe('payment report', () => {
     await wrapper.find('[name="from"]').setValue('2026-10-02')
     await wrapper.find('[name="to"]').setValue('2026-10-02')
     await wrapper.find('[name="q"]').setValue('NEW')
-    await wrapper.find('form').trigger('submit')
+    await new Promise((resolve) => setTimeout(resolve, 320))
     await flushPromises()
     expect(wrapper.text()).toContain('230.00')
     finishOld({

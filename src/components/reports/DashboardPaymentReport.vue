@@ -60,9 +60,26 @@ onUnmounted(() => {
       </p>
     </div>
 
-    <p v-if="loading" role="status" class="text-secondary-500 rounded-xl bg-white p-6">
-      Loading payment overview…
-    </p>
+    <div v-if="loading" role="status" aria-label="Loading payment overview">
+      <span class="sr-only">Loading payment overview…</span>
+      <div aria-hidden="true" class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        <div
+          v-for="card in 7"
+          :key="card"
+          class="border-secondary-200 rounded-xl border p-5 shadow-sm"
+          :class="card === 1 ? 'bg-secondary-900' : 'bg-white'"
+        >
+          <div
+            class="h-4 w-28 animate-pulse rounded"
+            :class="card === 1 ? 'bg-secondary-700' : 'bg-secondary-200'"
+          />
+          <div
+            class="mt-4 h-7 w-36 animate-pulse rounded"
+            :class="card === 1 ? 'bg-secondary-700' : 'bg-secondary-200'"
+          />
+        </div>
+      </div>
+    </div>
     <div v-else-if="error" role="alert" class="bg-danger-50 text-danger-700 rounded-xl p-4">
       {{ error }}
       <button type="button" class="font-semibold underline" @click="load">Retry</button>
