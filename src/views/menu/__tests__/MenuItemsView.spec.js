@@ -1,6 +1,8 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { flushPromises, mount } from '@vue/test-utils'
 import { createMemoryHistory, createRouter } from 'vue-router'
+import { createPinia, setActivePinia } from 'pinia'
+import { useAuthStore } from '@/stores/auth'
 
 vi.mock('@/api/menuItems', () => ({
   getMenuItems: vi.fn(),
@@ -16,6 +18,7 @@ vi.mock('@/api/categories', () => ({
   updateCategory: vi.fn(),
   deleteCategory: vi.fn(),
 }))
+vi.mock('@/api/branches', () => ({ getBranches: vi.fn() }))
 vi.mock('vue3-toastify', () => ({
   toast: { info: vi.fn(), success: vi.fn(), error: vi.fn() },
 }))
@@ -23,6 +26,7 @@ vi.mock('vue3-toastify', () => ({
 import { getMenuItems, updateMenuItem } from '@/api/menuItems'
 import { deleteCategory, getCategories } from '@/api/categories'
 import { toast } from 'vue3-toastify'
+import { getBranches } from '@/api/branches'
 import MenuItemsView from '../MenuItemsView.vue'
 import MenuItemRow from '@/components/menu/MenuItemRow.vue'
 import MenuItemFormModal from '@/components/menu/MenuItemFormModal.vue'
@@ -86,6 +90,9 @@ async function mountView() {
 describe('MenuItemsView', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    setActivePinia(createPinia())
+    useAuthStore().user = { id: 1, roles: ['manager'], branch: { id: 1 } }
+    getBranches.mockResolvedValue({ data: [], meta: { last_page: 1 } })
     getMenuItems.mockImplementation(({ category_id } = {}) =>
       Promise.resolve({
         data: menuItemsPayload.data.filter(
@@ -108,6 +115,32 @@ describe('MenuItemsView', () => {
     expect(wrapper.text()).toContain('Menu Items')
     const newButton = wrapper.findAll('button').find((b) => b.text().includes('New Item'))
     expect(newButton).toBeTruthy()
+  })
+
+  it('shows a popular badge for the manager branch', async () => {
+    getMenuItems.mockResolvedValue({
+      data: [{ ...menuItemsPayload.data[0], is_popular: true, quantity_sold: 7 }],
+    })
+    const view = await mountView()
+
+    expect(view.text()).toContain('Popular')
+    expect(view.find('[title="7 sold in this branch over the last 30 days"]').exists()).toBe(true)
+    expect(getMenuItems).toHaveBeenCalledWith(expect.objectContaining({ branch_id: undefined }))
+  })
+
+  it('loads popularity for the admin selected branch', async () => {
+    useAuthStore().user = { id: 9, roles: ['admin'] }
+    getBranches.mockResolvedValue({ data: [{ id: 2, name: 'Downtown' }, { id: 3, name: 'Uptown' }], meta: { last_page: 1 } })
+    const view = await mountView()
+
+    expect(getMenuItems).toHaveBeenCalledWith(expect.objectContaining({ branch_id: undefined }))
+    expect(view.text()).toContain('Select a branch to see its popular items.')
+    await view.find('#menu-branch').setValue('2')
+    await flushPromises()
+    expect(getMenuItems).toHaveBeenLastCalledWith(expect.objectContaining({ branch_id: 2 }))
+    await view.find('#menu-branch').setValue('3')
+    await flushPromises()
+    expect(getMenuItems).toHaveBeenLastCalledWith(expect.objectContaining({ branch_id: 3 }))
   })
 
   it('renders the category sidebar and only the selected category items', async () => {

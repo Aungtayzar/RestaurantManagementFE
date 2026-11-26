@@ -36,14 +36,14 @@ describe('menuItems API', () => {
       expect(result).toEqual(payload)
     })
 
-    it('passes query params for search, category_id, available', async () => {
+    it('passes query params for search, category_id, available and branch_id', async () => {
       const payload = { data: [] }
       apiClient.get.mockResolvedValueOnce({ data: payload })
 
-      await getMenuItems({ search: 'pizza', category_id: 3, available: true })
+      await getMenuItems({ search: 'pizza', category_id: 3, available: true, branch_id: 2 })
 
       expect(apiClient.get).toHaveBeenCalledWith('/menu-items', {
-        params: { search: 'pizza', category_id: 3, available: true },
+        params: { search: 'pizza', category_id: 3, available: true, branch_id: 2 },
       })
     })
 

@@ -86,6 +86,15 @@ describe('PosView', () => {
     )
   })
 
+  it('shows the branch popular badge on a POS item', async () => {
+    getMenu.mockResolvedValue({ data: [{ ...menu.data[0], items: [{ ...menu.data[0].items[0], is_popular: true, quantity_sold: 8 }] }] })
+    const wrapper = setup({ id: 1, roles: ['cashier'], branch: { id: 1 } })
+    await flushPromises()
+
+    expect(wrapper.text()).toContain('Popular')
+    expect(wrapper.find('[title="8 sold in this branch over the last 30 days"]').exists()).toBe(true)
+  })
+
   it('reuses the idempotency key when retrying a failed order', async () => {
     createOrder.mockRejectedValueOnce(new Error('network'))
     const wrapper = setup({ id: 1, roles: ['cashier'], branch: { id: 1 } })

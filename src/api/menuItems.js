@@ -1,10 +1,11 @@
 import apiClient from './client'
 
-export async function getMenuItems({ search, category_id, available } = {}) {
+export async function getMenuItems({ search, category_id, available, branch_id } = {}) {
   const params = {}
   if (search !== undefined) params.search = search
   if (category_id !== undefined) params.category_id = category_id
   if (available !== undefined) params.available = available
+  if (branch_id !== undefined) params.branch_id = branch_id
   const response = await apiClient.get('/menu-items', { params })
   return response.data
 }

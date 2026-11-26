@@ -22,7 +22,10 @@ defineEmits(['select'])
       {{ item.name.charAt(0) }}
     </div>
     <div class="space-y-1 p-3">
-      <p class="text-secondary-900 truncate text-sm font-medium">{{ item.name }}</p>
+      <div class="flex flex-wrap items-center gap-1">
+        <p class="text-secondary-900 truncate text-sm font-medium">{{ item.name }}</p>
+        <span v-if="item.is_popular" class="bg-primary-50 text-primary-700 rounded-full px-2 py-0.5 text-xs font-semibold" :title="`${item.quantity_sold} sold in this branch over the last 30 days`">Popular</span>
+      </div>
       <p
         v-if="item.description"
         :title="item.description"

@@ -188,6 +188,8 @@ onUnmounted(() => {
       </div>
     </header>
 
+    <p v-if="hasBranch" class="text-secondary-500 text-sm">Popular marks the top 10 available items by units sold in this branch over the last 30 days.</p>
+
     <p v-if="!hasBranch" class="text-secondary-500 text-sm">Select a branch to start an order.</p>
     <div v-else class="grid gap-4 lg:grid-cols-[1fr_22rem]">
       <div class="space-y-4">

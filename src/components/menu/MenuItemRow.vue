@@ -62,7 +62,10 @@ function toggleAvailability() {
     </div>
 
     <div class="min-w-0 flex-1">
-      <h3 class="text-secondary-900 truncate text-sm font-semibold">{{ menuItem.name }}</h3>
+      <div class="flex flex-wrap items-center gap-2">
+        <h3 class="text-secondary-900 truncate text-sm font-semibold">{{ menuItem.name }}</h3>
+        <span v-if="menuItem.is_popular" class="bg-primary-50 text-primary-700 rounded-full px-2 py-0.5 text-xs font-semibold" :title="`${menuItem.quantity_sold} sold in this branch over the last 30 days`">Popular</span>
+      </div>
       <p v-if="trimmedDescription" class="text-secondary-500 truncate text-sm">
         {{ trimmedDescription }}
       </p>

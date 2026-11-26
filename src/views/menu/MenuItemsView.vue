@@ -8,6 +8,8 @@ import {
   TrashIcon,
 } from '@heroicons/vue/24/outline'
 import { toast } from 'vue3-toastify'
+import { useAuthStore } from '@/stores/auth'
+import { getBranches } from '@/api/branches'
 import { getMenuItems, updateMenuItem } from '@/api/menuItems'
 import { deleteCategory, getCategories } from '@/api/categories'
 import CategoryFormModal from '@/components/menu/CategoryFormModal.vue'
@@ -22,6 +24,11 @@ const AVAILABILITY_OPTIONS = [
   { value: '1', label: 'Available' },
   { value: '0', label: 'Unavailable' },
 ]
+
+const auth = useAuthStore()
+const isAdmin = computed(() => auth.user?.roles?.includes('admin'))
+const branches = ref([])
+const selectedBranch = ref('')
 
 const menuItems = ref([])
 const categories = ref([])
@@ -41,6 +48,7 @@ const deletingCategoryId = ref(null)
 const categoryPendingDelete = ref(null)
 const isInitialized = ref(false)
 let searchTimeout
+let menuRequestId = 0
 
 const selectedCategoryRecord = computed(() =>
   categories.value.find((category) => String(category.id) === selectedCategory.value),
@@ -49,6 +57,7 @@ const visibleItems = computed(() => menuItems.value)
 const hasItems = computed(() => visibleItems.value.length > 0)
 
 async function fetchMenuItems() {
+  const requestId = ++menuRequestId
   if (!selectedCategory.value) {
     menuItems.value = []
     return
@@ -60,13 +69,16 @@ async function fetchMenuItems() {
       search: debouncedSearch.value || undefined,
       category_id: selectedCategory.value,
       available: selectedAvailability.value || undefined,
+      branch_id: isAdmin.value && selectedBranch.value ? Number(selectedBranch.value) : undefined,
     })
-    menuItems.value = data.data ?? []
+    if (requestId === menuRequestId) menuItems.value = data.data ?? []
   } catch {
-    error.value = 'Failed to load menu items. Please try again.'
-    menuItems.value = []
+    if (requestId === menuRequestId) {
+      error.value = 'Failed to load menu items. Please try again.'
+      menuItems.value = []
+    }
   } finally {
-    isLoading.value = false
+    if (requestId === menuRequestId) isLoading.value = false
   }
 }
 
@@ -86,6 +98,20 @@ async function fetchCategories({ preferredCategoryId } = {}) {
 }
 
 async function initialize() {
+  if (isAdmin.value) {
+    try {
+      let page = 1
+      let lastPage = 1
+      do {
+        const result = await getBranches({ page })
+        branches.value.push(...(result.data ?? []))
+        lastPage = result.meta?.last_page ?? 1
+        page++
+      } while (page <= lastPage)
+    } catch {
+      toast.error('Failed to load branches. Please try again.')
+    }
+  }
   await fetchCategories()
   await fetchMenuItems()
   isInitialized.value = true
@@ -182,16 +208,30 @@ watch(search, (value) => {
     debouncedSearch.value = value.trim()
   }, 300)
 })
-watch([debouncedSearch, selectedCategory, selectedAvailability], () => {
+watch([debouncedSearch, selectedCategory, selectedAvailability, selectedBranch], () => {
   if (isInitialized.value) fetchMenuItems()
 })
 initialize()
-onUnmounted(() => clearTimeout(searchTimeout))
+onUnmounted(() => {
+  clearTimeout(searchTimeout)
+  menuRequestId++
+})
 </script>
 
 <template>
   <div>
-    <h1 class="text-secondary-900 mb-6 text-2xl font-bold">Menu Items</h1>
+    <header class="mb-6 flex flex-wrap items-center justify-between gap-3">
+      <h1 class="text-secondary-900 text-2xl font-bold">Menu Items</h1>
+      <div v-if="isAdmin" class="flex items-center gap-2">
+        <label for="menu-branch" class="text-secondary-500 text-sm">Branch</label>
+        <select id="menu-branch" v-model="selectedBranch" class="border-secondary-300 rounded-lg border px-3 py-2 text-sm">
+          <option value="" disabled>Select a branch</option>
+          <option v-for="branch in branches" :key="branch.id" :value="String(branch.id)">{{ branch.name }}</option>
+        </select>
+      </div>
+    </header>
+    <p v-if="isAdmin && !selectedBranch" class="text-secondary-500 mb-4 text-sm">Select a branch to see its popular items.</p>
+    <p v-else class="text-secondary-500 mb-4 text-sm">Popular marks the top 10 available items by units sold in this branch over the last 30 days.</p>
 
     <div class="grid items-start gap-5 lg:grid-cols-[19rem_minmax(0,1fr)]">
       <aside
